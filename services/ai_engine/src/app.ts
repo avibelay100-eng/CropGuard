@@ -22,14 +22,12 @@ import { SERVICE_NAME, SERVICE_VERSION, TEST_PAGE_PATH, loadSettings, type Setti
 import { InvalidImageError, prepareImage } from "./imageProcessing.js";
 import { loadLabels, parseLabel } from "./labels.js";
 import { InferenceError, ModelLoadError, loadPredictor, topKIndices, type Predictor } from "./modelLoader.js";
+import type { AiEngineErrorCode, ErrorResponse, HealthResponse, PredictionResponse } from "@cropguard/shared-types";
 import {
   errorResponseSchema,
   healthResponseSchema,
   predictRequestBodySchema,
   predictionResponseSchema,
-  type ErrorResponse,
-  type HealthResponse,
-  type PredictionResponse,
 } from "./schemas.js";
 
 // ---------------------------------------------------------------------------
@@ -45,7 +43,7 @@ export class HttpError extends Error {
 }
 
 // קוד קצר וקבוע לכל סטטוס, כדי שהאפליקציה בצד הלקוח תוכל להחליט מה להציג
-const ERROR_CODES: Readonly<Record<number, string>> = {
+const ERROR_CODES: Readonly<Record<number, AiEngineErrorCode>> = {
   400: "bad_request",
   404: "not_found",
   405: "method_not_allowed",

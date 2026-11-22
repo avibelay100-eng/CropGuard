@@ -1,50 +1,14 @@
 /**
- * CropGuard AI Engine - מבני ה-JSON של ה-API.
+ * CropGuard AI Engine - סכמות ה-JSON של ה-API.
  *
- * לכל תשובה יש גם טיפוס TypeScript (לבדיקת הקוד) וגם JSON Schema
- * (ש-Fastify משתמש בו לסריאליזציה מהירה ולתיעוד ב-/docs).
+ * טיפוסי ה-TypeScript של התשובות נמצאים בחבילה המשותפת @cropguard/shared-types,
+ * כדי שגם השרת והלקוח ישתמשו בהם. כאן נשארות רק סכמות ה-JSON, ש-Fastify
+ * משתמש בהן לסריאליזציה מהירה ולתיעוד ב-/docs.
  */
 
-export interface ClassScore {
-  model_label: string;
-  disease: string;
-  confidence: number;
-}
+import type { ClassScore, ErrorResponse, HealthResponse, PredictionResponse } from "@cropguard/shared-types";
 
-export interface PredictionResponse {
-  /** שם קריא של המחלקה המובילה, למשל "Tomato Late blight" */
-  disease: string;
-  /** התווית הגולמית מ-labels-38.txt */
-  model_label: string;
-  plant: string;
-  /** true כשהמחלקה המובילה היא "Healthy" */
-  is_healthy: boolean;
-  status: "healthy" | "infected";
-  /** הסתברות המחלקה המובילה, 0..1 */
-  confidence: number;
-  /** אותה הסתברות באחוזים, 0..100 */
-  confidence_percent: number;
-  /** true כשהוודאות מתחת לסף שהוגדר */
-  uncertain: boolean;
-  top_predictions: ClassScore[];
-}
-
-export interface HealthResponse {
-  service: string;
-  version: string;
-  status: "ok" | "degraded";
-  model_loaded: boolean;
-  class_count: number;
-  /** הסיבה שהמודל לא נטען, או null */
-  detail: string | null;
-}
-
-export interface ErrorResponse {
-  /** קוד קצר וקבוע שהלקוח יכול לבדוק, למשל "unsupported_media_type" */
-  error: string;
-  /** הסבר לבני אדם */
-  detail: string;
-}
+export type { ClassScore, ErrorResponse, HealthResponse, PredictionResponse };
 
 export const classScoreSchema = {
   type: "object",
@@ -96,6 +60,21 @@ export const errorResponseSchema = {
     detail: { type: "string", examples: ["Uploaded file must be an image."] },
   },
 } as const;
+
+// ---------------------------------------------------------------------------
+// בדיקה בזמן קומפילציה: השדות בכל סכמה זהים בדיוק לשדות בטיפוס המשותף.
+// אם מוסיפים או מוחקים שדה רק באחד מהם, tsc נכשל בשורה שלמטה.
+// ---------------------------------------------------------------------------
+type SameKeys<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type SchemaKeys<S extends { readonly required: readonly string[] }> = S["required"][number];
+
+const schemasMatchSharedTypes: [
+  SameKeys<SchemaKeys<typeof classScoreSchema>, keyof ClassScore>,
+  SameKeys<SchemaKeys<typeof predictionResponseSchema>, keyof PredictionResponse>,
+  SameKeys<SchemaKeys<typeof healthResponseSchema>, keyof HealthResponse>,
+  SameKeys<SchemaKeys<typeof errorResponseSchema>, keyof ErrorResponse>,
+] = [true, true, true, true];
+void schemasMatchSharedTypes;
 
 /** גוף הבקשה של /predict - משמש רק לתיעוד ב-Swagger (כדי שיופיע שם כפתור העלאת קובץ) */
 export const predictRequestBodySchema = {

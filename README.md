@@ -13,7 +13,7 @@ CropGuard/
 │   ├── server/          שרת הליבה: Node.js + Prisma                  (שלב 2 - 30%)
 │   └── client/          ממשק המשתמש: React
 └── packages/
-    └── shared-types/    טיפוסי TypeScript משותפים לשרת, ללקוח ולשירות ה-AI
+    └── shared-types/    טיפוסי TypeScript משותפים לשרת, ללקוח ולשירות ה-AI      ✅
 ```
 
 ## התקנה והרצה
@@ -39,9 +39,9 @@ npm run dev:ai
 
 | שלב | חלק | מצב |
 |---|---|---|
-| 1 | `services/ai_engine` | הושלם: 25 בדיקות עוברות, תוצאות זהות למודל המקורי |
+| 1 | `services/ai_engine` | הושלם: 27 בדיקות עוברות, תוצאות זהות למודל המקורי |
+| - | `packages/shared-types` | טיפוסי ה-API של שירות ה-AI זמינים לשרת וללקוח |
 | 2 | `apps/server` | טרם התחיל |
 | - | `apps/client` | טרם התחיל |
-| - | `packages/shared-types` | טרם התחיל |
 
 כשחבילה חדשה מקבלת `package.json`, מוסיפים אותה לרשימת `workspaces` ב-`package.json` הראשי.

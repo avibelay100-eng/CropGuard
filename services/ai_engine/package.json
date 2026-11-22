@@ -16,6 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@cropguard/shared-types": "*",
     "@fastify/multipart": "^10.1.9",
     "@fastify/swagger": "^9.9.5",
     "@fastify/swagger-ui": "^6.1.5",

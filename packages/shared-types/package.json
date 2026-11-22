@@ -1,0 +1,19 @@
+{
+  "name": "@cropguard/shared-types",
+  "version": "0.1.0",
+  "description": "CropGuard - TypeScript types shared by the AI engine, server and client",
+  "private": true,
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

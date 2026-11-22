@@ -7,6 +7,7 @@
     "node": ">=20"
   },
   "workspaces": [
+    "packages/shared-types",
     "services/ai_engine"
   ],
   "scripts": {
