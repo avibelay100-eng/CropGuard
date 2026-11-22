@@ -18,7 +18,7 @@ export function AuthShell({ title, children, footer }) {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-8 flex items-center gap-3">
-        <img src="/leaf.svg" alt="" className="size-10" />
+        <img src={`${import.meta.env.BASE_URL}leaf.svg`} alt="" className="size-10" />
         <div>
           <p className="font-display text-3xl font-bold text-leaf">CropGuard</p>
           <p className="text-soil">אבחון מחלות בעלי צמחים מתמונה</p>

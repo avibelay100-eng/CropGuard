@@ -3,7 +3,7 @@
  *
  * גרסת ההדגמה רצה כולה בדפדפן, בלי שרת ובלי מסד נתונים, ולכן היא צריכה עותק קבוע של:
  *   - library.json - ספריית המחלות המלאה (תוכן בעברית + המלצות ומחירים), מאותה פונקציה שהשרת משתמש בה
- *   - news.json    - תמונת מצב של החדשות (כותרות, תקצירים קצרים וקישורים למקור)
+ *   - news.json    - תמונת מצב של החדשות (כותרות, מקור, תאריך וקישור לכתבה המלאה - בלי תקצירים)
  *
  * הרצה (מתוך apps/server, כשמסד הפיתוח רץ ונטען ב-seed):
  *     npm run export-demo-data
@@ -45,7 +45,12 @@ async function main() {
   const news = await createNewsService({
     onSourceError: (source, error) => console.warn(`[news] ${source.id} failed: ${(error).message}`),
   }).get();
-  const items = news.items.slice(0, NEWS_LIMIT);
+  // רק כותרת, מקור, תאריך וקישור - בלי התקצירים, כדי לא לפרסם מחדש טקסט של אתרים אחרים בדף ציבורי
+  // חצי בעברית וחצי באנגלית, כדי שסינון השפה בהדגמה יראה תוצאות בשתי השפות
+  const perLanguage = (language) => news.items.filter((item) => item.language === language).slice(0, NEWS_LIMIT / 2);
+  const items = [...perLanguage("he"), ...perLanguage("en")]
+    .sort((x, y) => (y.publishedAt ?? "").localeCompare(x.publishedAt ?? ""))
+    .map((item) => ({ ...item, summary: "" }));
   writeJson("news.json", { ...news, items, sources: news.sources.map((s) => ({ ...s, itemCount: items.filter((i) => i.sourceId === s.id).length })) });
   console.log(`news.json: ${items.length} items from ${news.sources.filter((s) => s.ok).length} sources`);
 }

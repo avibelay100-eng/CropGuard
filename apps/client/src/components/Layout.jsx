@@ -51,7 +51,7 @@ export function Layout() {
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4">
           <div className="flex items-center gap-8">
             <NavLink to="/scan" className="flex items-center gap-2 py-3 font-display text-2xl font-bold text-leaf">
-              <img src="/leaf.svg" alt="" className="size-7" />
+              <img src={`${import.meta.env.BASE_URL}leaf.svg`} alt="" className="size-7" />
               CropGuard
             </NavLink>
             <nav aria-label="ניווט ראשי" className="hidden gap-6 sm:flex">

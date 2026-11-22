@@ -1,0 +1,60 @@
+# גרסת ההדגמה של CropGuard ב-GitHub Pages: https://avibelay100-eng.github.io/CropGuard/
+#
+# בונה רק את הלקוח (apps/client) במצב הדגמה: "שרת" שרץ בדפדפן עם נתונים לדוגמה (src/demo),
+# כי Pages מגיש קבצים סטטיים בלבד - בלי השרת, מסד הנתונים ושירות ה-AI.
+# רץ אוטומטית בכל push ל-main, ואפשר להפעיל ידנית מלשונית Actions.
+
+name: Deploy demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# פריסה אחת בכל פעם; פריסה חדשה מחליפה את זו שעוד לא הסתיימה
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # רק התלויות של הלקוח; בלי סקריפטי התקנה (prisma generate של השרת לא נחוץ כאן)
+      - run: npm ci --workspace=apps/client --ignore-scripts
+
+      # הבדיקות של הלקוח, כולל של שרת ההדגמה, לפני שמפרסמים
+      - run: npm test --workspace=apps/client
+
+      - run: npm run build --workspace=apps/client
+        env:
+          VITE_DEMO: "true"
+          # כתובת שלא קיימת: כל בקשה אליה נענית בדפדפן ע"י שרת ההדגמה
+          VITE_API_URL: https://demo.cropguard.invalid/api
+          CROPGUARD_BASE: /CropGuard/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/client/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
