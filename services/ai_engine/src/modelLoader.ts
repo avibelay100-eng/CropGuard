@@ -58,6 +58,7 @@ function validateScores(output: ort.Tensor | undefined, classCount: number): Flo
   return scores;
 }
 
+/** מריץ את מודל ה-ONNX על תמונה אחת ומחזיר 38 הסתברויות אחרי אימות; run רץ על thread נפרד ולא חוסם את השרת */
 export class OnnxPredictor implements Predictor {
   private readonly inputName: string;
   private readonly outputName: string;

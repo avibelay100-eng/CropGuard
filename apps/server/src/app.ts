@@ -35,6 +35,7 @@ import type { NewsService } from "./services/news.js";
 import type { SmsSender } from "./services/sms.js";
 import "./types/express.js";
 
+/** כל התלויות שהאפליקציה צריכה. מוזרקות מבחוץ (Dependency Injection), כך שבבדיקות מחליפים אותן במדומות - AI, SMS, חדשות */
 export interface AppDeps {
   prisma: PrismaClient;
   config: ServerConfig;
@@ -44,11 +45,16 @@ export interface AppDeps {
   smsSender: SmsSender;
 }
 
+/** אפשרויות בנייה שאינן תלויות - כרגע רק כיבוי הלוגים בבדיקות */
 export interface AppOptions {
   /** false מכבה את הלוגים (בבדיקות) */
   logger?: boolean;
 }
 
+/**
+ * בונה את אפליקציית Express: לוגים, CORS, JSON, הגבלת קצב, כל ה-routes, ו-handlers לשגיאות.
+ * סדר הרישום חשוב: notFound ו-errorHandler תמיד אחרונים, כדי לתפוס כל מה שלא טופל.
+ */
 export function createApp(deps: AppDeps, options: AppOptions = {}): Express {
   const app = express();
   app.disable("x-powered-by");
@@ -66,6 +72,7 @@ export function createApp(deps: AppDeps, options: AppOptions = {}): Express {
   app.use(cors({ origin: deps.config.corsOrigins }));
   app.use(express.json({ limit: "100kb" }));
 
+  // בדיקת חיות פשוטה - בלי מסד ובלי אימות; משמשת את סקריפט ה-E2E ומערכות ניטור
   app.get("/api/health", (_request, response) => {
     response.json({ status: "ok", service: "CropGuard Server" });
   });

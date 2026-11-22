@@ -16,6 +16,7 @@ const LANGUAGE_OPTIONS: ReadonlyArray<{ value: NewsLanguage | ""; label: string 
   { value: "en", label: "English" },
 ];
 
+/** מסך החדשות: טעינה אחת, סינון שפה מקומי, אזהרה כשחלק מהמקורות נפלו, וקרדיט לכל מקור */
 export function NewsPage() {
   const [news, setNews] = useState<NewsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +116,7 @@ export function NewsPage() {
   );
 }
 
+/** כתבה: כתבה באנגלית מסומנת lang=en ו-dir=ltr, והקישור נפתח בלשונית חדשה (noopener) */
 function NewsCard({ item }: { item: NewsItem }) {
   const english = item.language === "en";
   return (

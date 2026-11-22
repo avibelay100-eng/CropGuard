@@ -17,6 +17,10 @@ interface DiseaseEntry {
 
 const HEALTHY = "בריא";
 
+/**
+ * ★ התאמה לשוק הישראלי: מילון 38 התוויות - שם הצמח והמחלה בעברית, והשם המדעי של הגורם.
+ * בדיקה אוטומטית (test/i18n.test.ts) מוודאת שהוא מכסה בדיוק את התוויות של המודל.
+ */
 export const DISEASES: Readonly<Record<string, DiseaseEntry>> = {
   // --- תפוח ---
   "Apple___Apple_scab": { plantHe: "תפוח", nameHe: "גרב התפוח", scientificName: "Venturia inaequalis" },

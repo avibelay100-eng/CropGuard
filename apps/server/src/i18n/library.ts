@@ -8,6 +8,7 @@
 
 import type { PathogenType } from "@cropguard/shared-types";
 
+/** התוכן של רשומה בספרייה: סוג הגורם, תסמינים ומניעה בעברית, ומקורות */
 export interface LibraryContent {
   pathogenType: PathogenType;
   symptomsHe: string;
@@ -15,6 +16,10 @@ export interface LibraryContent {
   sources: string[];
 }
 
+/**
+ * ★ התאמה לשוק הישראלי: שמות סוגי הגורמים בעברית.
+ * דיוק בוטני: כימשון (Phytophthora) הוא אואומיצט - "פטרייה מדומה" - ולא פטרייה אמיתית.
+ */
 export const PATHOGEN_TYPE_HE: Readonly<Record<PathogenType, string>> = {
   fungus: "פטרייה",
   oomycete: "פטרייה מדומה (אואומיצט)",
@@ -27,6 +32,7 @@ export const PATHOGEN_TYPE_HE: Readonly<Record<PathogenType, string>> = {
 const UMN = "https://extension.umn.edu";
 const CLEMSON_TOMATO = "https://hgic.clemson.edu/factsheet/tomato-diseases-disorders/";
 
+/** תוכן הספרייה לכל אחת מ-38 התוויות - תרגום ותמצות של הנחיות שירותי הדרכה, עם קישור למקור */
 export const LIBRARY: Readonly<Record<string, LibraryContent>> = {
   // --- תפוח ---
   "Apple___Apple_scab": {

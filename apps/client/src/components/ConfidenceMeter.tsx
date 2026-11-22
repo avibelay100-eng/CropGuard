@@ -8,6 +8,7 @@ import { formatPercent } from "../lib/format";
 /** חייב להתאים ל-AI_ENGINE_CONFIDENCE_THRESHOLD בשירות ה-AI */
 export const CONFIDENCE_THRESHOLD_PERCENT = 50;
 
+/** <meter> אמיתי לקוראי מסך + פס צבעוני לתצוגה; מתחת לסף - צבע קש (אזהרה) */
 export function ConfidenceMeter({
   percent,
   uncertain,

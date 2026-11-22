@@ -23,6 +23,7 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+/** מחזיק את המשתמש המחובר לכל האפליקציה; בטעינה בודק מול השרת אם הטוקן השמור עדיין תקף */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserDto | null>(null);
   const [loading, setLoading] = useState(() => tokenStore.get() !== null);
@@ -77,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+/** גישה למצב ההתחברות מכל רכיב; מחוץ ל-AuthProvider - שגיאה ברורה */
 export function useAuth(): AuthState {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used inside <AuthProvider>");

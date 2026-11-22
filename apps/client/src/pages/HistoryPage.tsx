@@ -22,10 +22,12 @@ const STATUS_OPTIONS: ReadonlyArray<{ value: DiagnosisStatusFilter | ""; label: 
   { value: "healthy", label: "בריא" },
 ];
 
+/** ערך הסינון מהכתובת -> ערך חוקי בלבד (כל ערך אחר = הכול) */
 function parseStatus(value: string | null): DiagnosisStatusFilter | "" {
   return value === "healthy" || value === "infected" ? value : "";
 }
 
+/** מסך ההיסטוריה: הסינון חי בכתובת (שיתוף/קישור), והתוצאות מסומנות לפי הסינון שלהן - בלי איפוס state בתוך effect */
 export function HistoryPage() {
   const { user } = useAuth();
   // שם החקלאי רלוונטי רק למי שרואה אבחונים של כמה חקלאים
@@ -199,6 +201,7 @@ export function HistoryPage() {
   );
 }
 
+/** שורת אבחון, עם סימון אי-התאמה לגידול, ומחיקה עם אישור בתוך השורה (המיקוד עובר לאישור וחוזר בביטול) */
 function HistoryRow({
   item,
   showFarmer,

@@ -7,11 +7,13 @@
 
 import { maskPhone } from "../auth/phone.js";
 
+/** הממשק לשליחת SMS - הקוד לא יודע איזה ספק בפועל שולח */
 export interface SmsSender {
   /** to בפורמט בינלאומי (+9725...) */
   send(to: string, text: string): Promise<void>;
 }
 
+/** לפיתוח בלבד: מדפיס את ההודעה (עם מספר מוסתר חלקית) במקום לשלוח */
 export function createConsoleSmsSender(write: (line: string) => void = console.log): SmsSender {
   return {
     async send(to, text) {
@@ -20,6 +22,7 @@ export function createConsoleSmsSender(write: (line: string) => void = console.l
   };
 }
 
+/** פרטי החשבון ב-Twilio - מגיעים ממשתני סביבה, לעולם לא מהקוד */
 export interface TwilioOptions {
   accountSid: string;
   authToken: string;
@@ -29,6 +32,7 @@ export interface TwilioOptions {
   timeoutMs?: number;
 }
 
+/** שליחה אמיתית דרך ה-REST API של Twilio (Basic Auth, טופס מקודד); תשובת שגיאה -> חריגה */
 export function createTwilioSmsSender({
   accountSid,
   authToken,

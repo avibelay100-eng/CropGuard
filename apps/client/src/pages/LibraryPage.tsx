@@ -25,6 +25,7 @@ const PATHOGEN_TYPES: ReadonlyArray<{ value: PathogenType; label: string; color:
 const typeStyle = (type: PathogenType) => PATHOGEN_TYPES.find((t) => t.value === type);
 const typeColor = (type: PathogenType) => typeStyle(type)?.color ?? "bg-line";
 
+/** ★ התאמה לשוק הישראלי: ספריית 38 המצבים - חיפוש בעברית/אנגלית/לטינית, סינון לפי גידול וסוג גורם (כולל אואומיצט) */
 export function LibraryPage() {
   const [entries, setEntries] = useState<LibraryEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +132,7 @@ export function LibraryPage() {
   );
 }
 
+/** כרטיס בספרייה: כפתור שפותח חלון פרטים; סוג הגורם מוצג גם בצבע וגם בטקסט */
 function LibraryCard({ entry, onOpen }: { entry: LibraryEntry; onOpen: () => void }) {
   return (
     <button

@@ -8,12 +8,14 @@
 import type { PredictionResponse } from "@cropguard/shared-types";
 import { z } from "zod";
 
+/** תמונה שהתקבלה מהמשתמש, כפי שנשלחת לשירות ה-AI */
 export interface UploadedImage {
   buffer: Buffer;
   mimetype: string;
   filename: string;
 }
 
+/** הממשק שהשרת צריך משירות ה-AI. מאפשר להחליף מימוש (HTTP אמיתי / מדומה בבדיקות) */
 export interface AiClient {
   predict(image: UploadedImage): Promise<PredictionResponse>;
 }
@@ -54,6 +56,10 @@ const predictionSchema = z.object({
 
 const errorSchema = z.object({ error: z.string(), detail: z.string() });
 
+/**
+ * לקוח HTTP לשירות ה-AI: שולח multipart ל-POST /predict?top_k=38 עם timeout.
+ * 4xx = התמונה נדחתה (rejected); 5xx / timeout / תשובה בצורה לא צפויה = השירות לא זמין (unavailable).
+ */
 export function createHttpAiClient(baseUrl: string, timeoutMs: number): AiClient {
   return {
     async predict(image) {
@@ -62,7 +68,7 @@ export function createHttpAiClient(baseUrl: string, timeoutMs: number): AiClient
 
       let response: Response;
       try {
-        // top_k=38: כל ההתפלגות, כדי לבדוק כמה מההסתברות נופלת על הגידול של החלקה
+        // ★ Crop Mismatch Guard - top_k=38: כל ההתפלגות, כדי לבדוק כמה מההסתברות נופלת על הגידול של החלקה
         response = await fetch(`${baseUrl}/predict?top_k=38`, {
           method: "POST",
           body: form,

@@ -8,6 +8,7 @@
 import { buildApp } from "./app.js";
 import { SERVICE_NAME, loadSettings } from "./config.js";
 
+/** עלייה: בניית האפליקציה (כולל טעינת המודל), רישום סגירה מסודרת, והאזנה לפורט */
 async function main(): Promise<void> {
   const settings = loadSettings();
   const app = await buildApp(settings);

@@ -15,6 +15,7 @@ import { createHash } from "node:crypto";
 import type { NewsItem, NewsLanguage, NewsResponse, NewsSourceStatus } from "@cropguard/shared-types";
 import { XMLParser } from "fast-xml-parser";
 
+/** מקור חדשות קבוע: שם, שפה וכתובת ההזנה (RSS) */
 export interface NewsSource {
   id: string;
   name: string;
@@ -79,6 +80,7 @@ const NAMED_ENTITIES: Readonly<Record<string, string>> = {
   ldquo: "“",
 };
 
+/** מפענח ישויות HTML (&amp;, &#8211; ...) - מקורות שונים מקודדים אחרת */
 function decodeEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, entity: string) => {
     if (entity.startsWith("#x") || entity.startsWith("#X")) {
@@ -127,6 +129,7 @@ export function safeLink(value: unknown): string | null {
   }
 }
 
+/** תאריך מההזנה -> ISO; תאריך לא תקין -> null (הכתבה עדיין מוצגת, בלי תאריך) */
 function toIsoDate(value: unknown): string | null {
   if (typeof value !== "string" || !value.trim()) return null;
   const date = new Date(value.trim());
@@ -154,6 +157,7 @@ function text(node: unknown): string {
   return "";
 }
 
+/** מפענח הזנת RSS 2.0 או Atom לרשימת כתבות נקיות; כתבה בלי כותרת או בלי קישור בטוח - נזרקת */
 export function parseFeed(xml: string, source: NewsSource): NewsItem[] {
   const doc = parser.parse(xml) as Record<string, any>;
   const rssItems = asArray(doc?.rss?.channel?.item);
@@ -206,6 +210,7 @@ export interface NewsService {
   get(): Promise<NewsResponse>;
 }
 
+/** הגדרות השירות - כולן ניתנות להחלפה בבדיקות (fetch מדומה, שעון מדומה) */
 export interface NewsServiceOptions {
   sources?: readonly NewsSource[];
   fetchImpl?: typeof fetch;
@@ -217,6 +222,7 @@ export interface NewsServiceOptions {
   onSourceError?: (source: NewsSource, error: unknown) => void;
 }
 
+/** שירות החדשות: טוען את כל המקורות במקביל, ממזג, ממיין ושומר במטמון */
 export function createNewsService({
   sources = NEWS_SOURCES,
   fetchImpl = fetch,
@@ -229,6 +235,7 @@ export function createNewsService({
   // בקשה אחת בכל פעם: אם כמה משתמשים פותחים את הדף יחד, הם מחכים לאותה טעינה
   let inFlight: Promise<NewsResponse> | null = null;
 
+  /** טעינת מקור אחד, עם timeout ו-User-Agent כללי (בלי מידע על המשתמשים) */
   async function loadSource(source: NewsSource): Promise<NewsItem[]> {
     const response = await fetchImpl(source.feedUrl, {
       // User-Agent כללי, בלי שום מידע על המשתמשים
@@ -239,6 +246,7 @@ export function createNewsService({
     return parseFeed(await response.text(), source);
   }
 
+  /** טעינת כל המקורות; מקור שנכשל לא מפיל את השאר (Promise.allSettled) */
   async function load(): Promise<NewsResponse> {
     const results = await Promise.allSettled(sources.map(loadSource));
 

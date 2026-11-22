@@ -83,6 +83,7 @@ export interface CreateFieldRequest {
   ownerId?: string;
 }
 
+/** חלקה כפי שהשרת מחזיר אותה */
 export interface FieldDto {
   id: string;
   name: string;

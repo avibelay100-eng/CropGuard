@@ -45,6 +45,7 @@ export async function seedReferenceData(prisma: PrismaClient): Promise<void> {
   });
 }
 
+/** הרצה ישירה (npm run db:seed): טעינה, ואזהרה אם יש מחירים שלא אומתו */
 async function main(): Promise<void> {
   const prisma = createPrismaClient();
   try {

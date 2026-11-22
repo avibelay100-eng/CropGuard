@@ -43,6 +43,10 @@ function placeholder(
   };
 }
 
+/**
+ * ★ התאמה לשוק הישראלי: מילון המחירים בשקלים. כל השורות isVerified: false - ערכי דוגמה עד שיוחלפו במחירון ספק.
+ * כסף נשמר במסד כ-Decimal(10,2) ולא כ-Float, כדי שלא יהיו שגיאות עיגול.
+ */
 export const PRODUCT_PRICES: readonly ProductPriceSeed[] = [
   // --- קוטלי פטריות מגע ---
   placeholder("mancozeb", "Dithane M-45", "1 kg", 45, 75),

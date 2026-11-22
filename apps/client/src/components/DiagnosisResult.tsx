@@ -9,6 +9,10 @@ import type { DiagnoseResponse, TreatmentOption } from "@cropguard/shared-types"
 import { formatPercent, formatPriceRange } from "../lib/format";
 import { ConfidenceMeter } from "./ConfidenceMeter";
 
+/**
+ * ★ מנגנון ליבה של CropGuard: כרטיס התוצאה ("תווית דגימה").
+ * באי-התאמה לגידול - אזהרת Crop Mismatch Guard בראש הכרטיס, האפשרויות בתוך הגידול הנכון, ובלי תכשירים.
+ */
 export function DiagnosisResult({ result }: { result: DiagnoseResponse }) {
   const tone = result.isHealthy ? "healthy" : "infected";
   const band = result.isHealthy ? "bg-leaf" : "bg-blight";

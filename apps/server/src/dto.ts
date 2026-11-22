@@ -8,6 +8,7 @@ import type { DiagnosisHistoryItem, FieldDto, UserDto } from "@cropguard/shared-
 import type { Diagnosis, Field, User } from "./generated/prisma/client.js";
 import { describeDisease } from "./i18n/diseases.js";
 
+/** משתמש -> תשובה. בוחרים שדות במפורש, כך ש-passwordHash לא יוצא החוצה אף פעם */
 export function toUserDto(user: Pick<User, "id" | "email" | "name" | "role" | "phone" | "createdAt">): UserDto {
   return {
     id: user.id,
@@ -19,6 +20,7 @@ export function toUserDto(user: Pick<User, "id" | "email" | "name" | "role" | "p
   };
 }
 
+/** חלקה -> תשובה, כולל מספר האבחונים ושם הבעלים (לאגרונום שרואה חלקות של כמה חקלאים) */
 export function toFieldDto(
   field: Field & { _count: { diagnoses: number }; owner: Pick<User, "name"> },
 ): FieldDto {
@@ -40,6 +42,7 @@ type DiagnosisWithField = Diagnosis & {
   field: Pick<Field, "id" | "name" | "cropType"> & { owner: Pick<User, "id" | "name"> };
 };
 
+/** אבחון שמור -> שורה בהיסטוריה, עם שמות בעברית מהמילון (המסד שומר רק את התווית והשם באנגלית) */
 export function toDiagnosisHistoryItem(diagnosis: DiagnosisWithField): DiagnosisHistoryItem {
   return {
     id: diagnosis.id,

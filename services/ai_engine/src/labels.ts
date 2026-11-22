@@ -7,6 +7,7 @@
 
 import { readFile } from "node:fs/promises";
 
+// מבנה התוויות: 38 מחלקות, "צמח___מצב", ו-Healthy מסמן עלה בריא
 export const EXPECTED_CLASS_COUNT = 38;
 const LABEL_SEPARATOR = "___";
 const HEALTHY_CONDITION = "healthy";
@@ -23,6 +24,7 @@ export class LabelsError extends Error {
   override name = "LabelsError";
 }
 
+/** תווית אחרי פענוח: צמח, שם לתצוגה, והאם העלה בריא */
 export interface LabelInfo {
   modelLabel: string;
   plant: string;

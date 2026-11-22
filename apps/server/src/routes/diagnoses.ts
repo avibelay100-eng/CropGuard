@@ -28,10 +28,12 @@ const querySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+/** בונה את נתיבי ההיסטוריה והמחיקה. imageStore נדרש כדי למחוק גם את קובץ התמונה */
 export function diagnosesRouter({ prisma, config, imageStore }: AppDeps): Router {
   const router = Router();
   router.use(requireAuth(prisma, config.jwtSecret));
 
+  // היסטוריה: חקלאי - רק שלו (מאולץ בשאילתה עצמה); אגרונום/מנהל - הכול; סינון ועימוד בשרת
   router.get("/", async (request, response) => {
     const user = request.user!;
     const query = querySchema.parse(request.query);

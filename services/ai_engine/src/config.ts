@@ -6,6 +6,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+// שם וגרסת השירות - מופיעים ב-/health, ב-/docs ובלוגים
 export const SERVICE_NAME = "CropGuard AI Engine";
 export const SERVICE_VERSION = "0.1.0";
 
@@ -19,6 +20,7 @@ export const MODEL_DIR = path.join(SERVICE_DIR, "model");
 // דף הבדיקה (public/index.html) שמוגש בכתובת "/"
 export const TEST_PAGE_PATH = path.join(SERVICE_DIR, "public", "index.html");
 
+/** ההגדרות של שירות ה-AI */
 export interface Settings {
   /** נתיב לקובץ המודל בפורמט ONNX (הומר מ-cropora_model.keras) */
   modelPath: string;
@@ -37,6 +39,7 @@ export interface Settings {
   logLevel: string;
 }
 
+/** ברירות המחדל - המודל והתוויות מתוך model/, תמונה 224x224, סף ודאות 0.5 */
 export const defaultSettings: Settings = {
   modelPath: path.join(MODEL_DIR, "cropora_model.onnx"),
   labelsPath: path.join(MODEL_DIR, "labels-38.txt"),
@@ -62,6 +65,7 @@ function envNumber(env: NodeJS.ProcessEnv, name: string, fallback: number): numb
   return value;
 }
 
+/** קורא משתנה סביבה טקסטואלי; ריק = ברירת המחדל */
 function envString(env: NodeJS.ProcessEnv, name: string, fallback: string): string {
   const raw = env[name];
   return raw === undefined || raw.trim() === "" ? fallback : raw.trim();

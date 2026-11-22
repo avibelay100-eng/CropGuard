@@ -10,6 +10,7 @@ import type { ClassScore, ErrorResponse, HealthResponse, PredictionResponse } fr
 
 export type { ClassScore, ErrorResponse, HealthResponse, PredictionResponse };
 
+/** סכמת JSON לתחזית אחת - לסריאליזציה מהירה ולתיעוד ב-/docs */
 export const classScoreSchema = {
   type: "object",
   required: ["model_label", "disease", "confidence"],
@@ -20,6 +21,7 @@ export const classScoreSchema = {
   },
 } as const;
 
+/** סכמת JSON לתשובת /predict; בדיקה בהמשך הקובץ מוודאת שהיא זהה לטיפוס המשותף */
 export const predictionResponseSchema = {
   type: "object",
   required: [
@@ -39,6 +41,7 @@ export const predictionResponseSchema = {
   },
 } as const;
 
+/** סכמת JSON לתשובת /health */
 export const healthResponseSchema = {
   type: "object",
   required: ["service", "version", "status", "model_loaded", "class_count", "detail"],
@@ -52,6 +55,7 @@ export const healthResponseSchema = {
   },
 } as const;
 
+/** סכמת JSON לשגיאה האחידה */
 export const errorResponseSchema = {
   type: "object",
   required: ["error", "detail"],

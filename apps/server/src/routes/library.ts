@@ -18,10 +18,12 @@ function englishName(modelLabel: string): string {
   return `${plant.replaceAll("_", " ")} ${condition.replaceAll("_", " ")}`.trim();
 }
 
+/** בונה את נתיב ספריית המחלות */
 export function libraryRouter({ prisma, config }: AppDeps): Router {
   const router = Router();
   router.use(requireAuth(prisma, config.jwtSecret));
 
+  // ★ התאמה לשוק הישראלי: הקטלוג המלא - תוכן בעברית מהקוד + המלצות ומחירים בשקלים מהמסד, בשתי שאילתות בלבד
   router.get("/", async (_request, response) => {
     const labels = Object.keys(DISEASES).map((modelLabel) => ({
       modelLabel,

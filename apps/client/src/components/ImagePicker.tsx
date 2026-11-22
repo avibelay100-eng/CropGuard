@@ -4,6 +4,7 @@
 
 import { useEffect, useId, useMemo, useState, type DragEvent } from "react";
 
+/** בחירת תמונה בלחיצה (בטלפון - גם מצלמה) או בגרירה, עם תצוגה מקדימה ושחרור הזיכרון שלה */
 export function ImagePicker({
   file,
   onChange,

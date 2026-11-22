@@ -32,10 +32,12 @@ const listQuerySchema = z.object({
   ownerId: z.string().min(1).optional(),
 });
 
+/** בונה את נתיבי החלקות; כולם דורשים התחברות (router.use למטה) */
 export function fieldsRouter({ prisma, config }: AppDeps): Router {
   const router = Router();
   router.use(requireAuth(prisma, config.jwtSecret));
 
+  // רשימת חלקות: חקלאי רואה רק את שלו; אגרונום ומנהל רואים הכול ויכולים לסנן לפי בעלים
   router.get("/", async (request, response) => {
     const user = request.user!;
     const query = listQuerySchema.parse(request.query);
@@ -57,6 +59,7 @@ export function fieldsRouter({ prisma, config }: AppDeps): Router {
     response.json(body);
   });
 
+  // יצירת חלקה: קואורדינטות נבדקות בטווח; רק מנהל יוצר חלקה עבור משתמש אחר
   router.post("/", async (request, response) => {
     const user = request.user!;
     const input = createFieldSchema.parse(request.body);

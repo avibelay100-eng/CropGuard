@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { to: "/news", label: "חדשות", icon: "M5 5h11v14H6a1 1 0 0 1-1-1V5Zm11 4h3v9a1 1 0 0 1-1 1h-2M8 9h5M8 12h5M8 15h3" },
 ] as const;
 
+/** פריטי הניווט, בשתי צורות: לשוניות עליונות במחשב, וסרגל תחתון עם אייקונים בטלפון */
 function NavItems({ variant }: { variant: "top" | "bottom" }) {
   return (
     <>
@@ -40,6 +41,7 @@ function NavItems({ variant }: { variant: "top" | "bottom" }) {
   );
 }
 
+/** המסגרת של כל מסך פנימי: כותרת עם המשתמש, ניווט, ואזור התוכן */
 export function Layout() {
   const { user, logout } = useAuth();
 

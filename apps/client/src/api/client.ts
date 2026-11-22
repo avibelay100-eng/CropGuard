@@ -44,6 +44,7 @@ const MESSAGES_HE: Record<ServerErrorCode | "network_error", string> = {
   network_error: "אין חיבור לשרת. בדקו את החיבור לאינטרנט ושהשרת פועל.",
 };
 
+/** שגיאה מהשרת (או מהרשת), עם קוד קבוע והודעה בעברית מוכנה להצגה */
 export class ApiError extends Error {
   override name = "ApiError";
   constructor(
@@ -65,6 +66,7 @@ export class ApiError extends Error {
 
 const TOKEN_KEY = "cropguard.token";
 
+/** קריאה/כתיבה של הטוקן, עטופות ב-try - בגלישה פרטית האחסון עלול להיות חסום */
 export const tokenStore = {
   get(): string | null {
     try {
@@ -85,10 +87,15 @@ export const tokenStore = {
 
 /** נקרא כשהשרת מחזיר 401 - ה-AuthProvider מתנתק ומחזיר למסך ההתחברות */
 let onUnauthorized: (() => void) | null = null;
+/** ה-AuthProvider רושם כאן פונקציה שמנתקת את המשתמש כשהשרת אומר שהטוקן לא תקף */
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
   onUnauthorized = handler;
 }
 
+/**
+ * הלב של שכבת ה-API: כתובת בסיס, JWT, JSON, וטיפול אחיד בשגיאות.
+ * 401 על בקשה עם טוקן = הטוקן פג -> ניתוק אוטומטי. 401 בהתחברות = סיסמה שגויה (לא מנתקים).
+ */
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const token = tokenStore.get();

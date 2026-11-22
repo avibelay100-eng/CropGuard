@@ -1,4 +1,5 @@
 /**
+ * ★ מנגנון ליבה של CropGuard - Crop Mismatch Guard.
  * בדיקת התאמה בין מה שהמודל ראה לבין הגידול של החלקה.
  *
  * הבעיה: המודל הוא "מסווג סגור" - הוא מכיר 38 מצבים ב-14 גידולים, ותמיד בוחר אחד מהם,
@@ -18,6 +19,14 @@ const SUPPORTED_CROPS = new Set(Object.keys(DISEASES).map(plantOfLabel));
 
 const IN_FIELD_CROP_OPTIONS = 3;
 
+/**
+ * ★ מנגנון ליבה של CropGuard - Crop Mismatch Guard.
+ * מקבל את הגידול של החלקה ואת כל 38 ההסתברויות, ומחזיר:
+ *   - fieldCropSharePercent: כמה מההסתברות נופלת על הגידול של החלקה
+ *   - matches: האם הצמח של התחזית המובילה הוא הגידול של החלקה
+ *   - inFieldCrop: האפשרויות הסבירות בתוך הגידול הנכון
+ * באי-התאמה, נתיב האבחון חוסם המלצות ריסוס ומסמן את האבחון כלא ודאי.
+ */
 export function checkCrop(fieldCrop: string, topLabel: string, scores: readonly ClassScore[]): CropCheck {
   const predictedPlant = plantOfLabel(topLabel);
   const supported = SUPPORTED_CROPS.has(fieldCrop);

@@ -17,6 +17,7 @@ type FormErrors = Partial<Record<"name" | "latitude" | "longitude", string>>;
 
 const EMPTY_FORM = { name: "", cropType: CROPS[0]!.value, latitude: "", longitude: "" };
 
+/** מסך החלקות: רשימה + טופס הוספה; כשאין חלקות הטופס נפתח מיד */
 export function FieldsPage() {
   const { user } = useAuth();
   const seesAll = user?.role === "AGRONOMIST" || user?.role === "ADMIN";
@@ -89,6 +90,7 @@ export function FieldsPage() {
   );
 }
 
+/** טופס חלקה חדשה: אימות קואורדינטות, ומילוי מה-GPS של המכשיר */
 function FieldForm({ onCreated, onCancel }: { onCreated: (field: FieldDto) => void; onCancel?: () => void }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});

@@ -77,6 +77,7 @@ const RESEND_COOLDOWN_MS = 60_000;
 
 const invalidCode = () => new HttpError(400, "invalid_code", "Invalid or expired code.");
 
+/** בונה את נתיבי האימות. smsSender מוזרק - בפיתוח מדפיס לטרמינל, בייצור שולח דרך Twilio */
 export function authRouter({ prisma, config, smsSender }: AppDeps): Router {
   const router = Router();
 
@@ -94,6 +95,7 @@ export function authRouter({ prisma, config, smsSender }: AppDeps): Router {
     if (owner && owner.id !== exceptUserId) throw conflict("This phone number is already linked to another account.");
   };
 
+  // הרשמה: אימות קלט, חסימת ADMIN, בדיקת כפילות אימייל/טלפון, גיבוב סיסמה, והנפקת JWT
   router.post("/register", async (request, response) => {
     const input = registerSchema.parse(request.body);
     if (input.role === "ADMIN") {
@@ -117,6 +119,7 @@ export function authRouter({ prisma, config, smsSender }: AppDeps): Router {
     response.status(201).json(issueToken(user));
   });
 
+  // התחברות: אותה תשובה ואותו זמן לאימייל לא קיים ולסיסמה שגויה - מונע גילוי משתמשים
   router.post("/login", async (request, response) => {
     const input = loginSchema.parse(request.body);
     const user = await prisma.user.findUnique({ where: { email: input.email } });
@@ -130,11 +133,13 @@ export function authRouter({ prisma, config, smsSender }: AppDeps): Router {
     response.json(issueToken(user));
   });
 
+  // פרטי המשתמש המחובר - הלקוח קורא לזה בטעינה כדי לבדוק שהטוקן השמור עדיין תקף
   router.get("/me", requireAuth(prisma, config.jwtSecret), async (request, response) => {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: request.user!.id } });
     response.json(toUserDto(user));
   });
 
+  // עדכון הטלפון לשחזור סיסמה (null מוחק); מספר שכבר שייך לחשבון אחר - 409
   router.patch("/me", requireAuth(prisma, config.jwtSecret), async (request, response) => {
     const input = updateMeSchema.parse(request.body);
     if (input.phone) await assertPhoneFree(input.phone, request.user!.id);

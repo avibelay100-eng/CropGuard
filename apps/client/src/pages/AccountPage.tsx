@@ -10,6 +10,7 @@ import { Button, Notice, PageHeader, TextField } from "../components/ui";
 import { ROLE_LABELS_HE } from "../lib/format";
 import { formatIsraeliMobile, isIsraeliMobile, PHONE_ERROR, PHONE_HINT } from "../lib/phone";
 
+/** פרטי החשבון וטופס טלפון; אחרי שמירה - מעדכנים גם את המשתמש ב-AuthContext */
 export function AccountPage() {
   const { user, setCurrentUser } = useAuth();
   const [phone, setPhone] = useState(user?.phone ? formatIsraeliMobile(user.phone) : "");

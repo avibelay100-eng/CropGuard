@@ -13,6 +13,7 @@ import { Button, Notice, TextField } from "../components/ui";
 import { isIsraeliMobile, PHONE_ERROR } from "../lib/phone";
 import { AuthShell } from "./AuthPages";
 
+/** שחזור סיסמה בשני שלבים (טלפון -> קוד + סיסמה). ההודעה אחרי שליחה זהה תמיד - לא מגלים אם המספר רשום */
 export function ForgotPasswordPage() {
   const { user } = useAuth();
   const navigate = useNavigate();

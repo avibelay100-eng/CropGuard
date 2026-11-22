@@ -54,6 +54,7 @@ const ERROR_CODES: Readonly<Record<number, AiEngineErrorCode>> = {
   503: "model_unavailable",
 };
 
+/** גוף השגיאה האחיד {error, detail} - אותו פורמט כמו בשרת הליבה */
 function errorBody(statusCode: number, detail: string): ErrorResponse {
   return { error: ERROR_CODES[statusCode] ?? "error", detail };
 }
@@ -88,6 +89,7 @@ function classifyError(error: FastifyError | HttpError): { statusCode: number; d
 // ולכן הבדיקה האמיתית היא האם sharp מצליח לפענח את הבייטים.
 const ACCEPTED_GENERIC_TYPES = new Set(["application/octet-stream", ""]);
 
+/** סוג תוכן שעשוי להיות תמונה; הבדיקה האמיתית היא הפענוח ב-sharp */
 function isAcceptedContentType(mimetype: string): boolean {
   const type = mimetype.split(";")[0]!.trim().toLowerCase();
   return type.startsWith("image/") || ACCEPTED_GENERIC_TYPES.has(type);
@@ -98,11 +100,13 @@ const PREDICT_ERROR_RESPONSES = Object.fromEntries(
   [400, 413, 415, 422, 500, 503].map((code) => [code, errorResponseSchema]),
 );
 
+/** עיגול למספר ספרות אחרי הנקודה - לתשובה נקייה (0.8995 ולא 0.89951234) */
 function round(value: number, digits: number): number {
   const factor = 10 ** digits;
   return Math.round(value * factor) / factor;
 }
 
+/** אפשרויות בנייה - כרגע רק כיבוי הלוגים בבדיקות */
 export interface BuildAppOptions {
   /** false מכבה את הלוגים (שימושי בבדיקות) */
   logger?: boolean;
@@ -203,6 +207,7 @@ export async function buildApp(
     });
   }
 
+  // מצב השירות: ok כשהמודל נטען, degraded עם הסיבה כשלא
   app.get(
     "/health",
     {
@@ -222,6 +227,7 @@ export async function buildApp(
     }),
   );
 
+  // התחזית: קובץ -> בדיקות -> 224x224 -> ONNX -> אימות הפלט -> top_k תחזיות (ברירת מחדל 3; 38 = כל ההתפלגות)
   app.post(
     "/predict",
     {
@@ -251,7 +257,7 @@ export async function buildApp(
         throw new HttpError(503, `Model is not available: ${loadError ?? "model not loaded"}`);
       }
 
-      // top_k: כמה תחזיות להחזיר. שרת הליבה מבקש את כל 38 כדי לבדוק התאמה לגידול של החלקה.
+      // ★ Crop Mismatch Guard - top_k: כמה תחזיות להחזיר. שרת הליבה מבקש את כל 38 כדי לבדוק התאמה לגידול של החלקה.
       const rawTopK = (request.query as Record<string, unknown> | undefined)?.["top_k"];
       let topK = settings.topK;
       if (rawTopK !== undefined) {

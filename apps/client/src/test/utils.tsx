@@ -31,6 +31,7 @@ export interface MockRoute {
   wait?: Promise<void>;
 }
 
+/** בקשה שנרשמה ב-fetch המדומה - כדי שבדיקה תוכל לבדוק מה נשלח לשרת */
 export interface RecordedCall {
   method: string;
   path: string;
@@ -38,6 +39,7 @@ export interface RecordedCall {
   body: BodyInit | null | undefined;
 }
 
+/** fetch מדומה: מחזיר תשובות לפי שיטה ונתיב, ונכשל בקול על בקשה שלא הוגדרה */
 export function mockFetch(routes: MockRoute[]) {
   const calls: RecordedCall[] = [];
   const fn = vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
@@ -83,8 +85,10 @@ export const farmer: UserDto = {
   createdAt: "2026-11-01T08:00:00.000Z",
 };
 
+// אגרונום לדוגמה - רואה את כל החקלאים
 export const agronomist: UserDto = { ...farmer, id: "u-agro", email: "dana@example.test", name: "דנה לוי", role: "AGRONOMIST" };
 
+/** חלקה לדוגמה, עם אפשרות לשנות שדות */
 export function field(overrides: Partial<FieldDto> = {}): FieldDto {
   return {
     id: "f-1",
@@ -101,6 +105,7 @@ export function field(overrides: Partial<FieldDto> = {}): FieldDto {
   };
 }
 
+/** תשובת אבחון לדוגמה: כימשון בעגבנייה, עם מחירים ובלי אי-התאמה */
 export const lateBlightResult: DiagnoseResponse = {
   diagnosis: { id: "d-1", fieldId: "f-1", imageUrl: "uploads/a.png", createdAt: "2026-11-22T10:09:42.932Z" },
   disease: {
@@ -181,6 +186,7 @@ export const mismatchResult: DiagnoseResponse = {
   warningsHe: ["החלקה מוגדרת כתירס, אבל המודל זיהה עגבנייה. ייתכן שבתמונה צמח אחר."],
 };
 
+/** תשובת אבחון לדוגמה: עלה עגבנייה בריא */
 export const healthyResult: DiagnoseResponse = {
   ...lateBlightResult,
   disease: {
@@ -202,6 +208,7 @@ export const healthyResult: DiagnoseResponse = {
   warningsHe: [],
 };
 
+/** שורת היסטוריה לדוגמה */
 export function historyItem(overrides: Partial<DiagnosisHistoryItem> = {}): DiagnosisHistoryItem {
   return {
     id: "d-1",
@@ -218,6 +225,7 @@ export function historyItem(overrides: Partial<DiagnosisHistoryItem> = {}): Diag
   };
 }
 
+/** עמוד היסטוריה לדוגמה (פריטים + סה"כ לעימוד) */
 export function historyPage(items: DiagnosisHistoryItem[], total = items.length, offset = 0): DiagnosisListResponse {
   return { items, total, limit: 20, offset };
 }

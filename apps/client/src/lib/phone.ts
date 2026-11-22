@@ -14,5 +14,6 @@ export function formatIsraeliMobile(e164: string): string {
   return /^05\d{8}$/.test(national) ? `${national.slice(0, 3)}-${national.slice(3, 6)}-${national.slice(6)}` : e164;
 }
 
+// טקסטי עזר ושגיאה אחידים לכל שדות הטלפון באפליקציה
 export const PHONE_HINT = "טלפון נייד ישראלי, למשל 050-1234567";
 export const PHONE_ERROR = "נא למלא מספר נייד ישראלי תקין, למשל 050-1234567.";

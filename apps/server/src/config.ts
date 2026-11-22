@@ -11,6 +11,7 @@ import { z } from "zod";
 // תיקיית apps/server (הקוד רץ מ-src/ או מ-dist/, שתיהן רמה אחת מתחת)
 export const SERVER_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
+/** כל ההגדרות של שרת הליבה, אחרי בדיקה והמרה לטיפוסים הנכונים */
 export interface ServerConfig {
   port: number;
   databaseUrl: string;
@@ -60,6 +61,10 @@ const envSchema = z.object({
   TWILIO_FROM: z.string().optional(),
 });
 
+/**
+ * קורא את משתני הסביבה ובודק אותם עם zod. הגדרה חסרה או שגויה עוצרת את השרת כבר בעלייה,
+ * עם הודעה שמסבירה מה לתקן - עדיף מכישלון מסתורי באמצע בקשה של משתמש.
+ */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   const parsed = envSchema.safeParse(env);
   if (!parsed.success) {

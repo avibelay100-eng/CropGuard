@@ -16,6 +16,7 @@ import { LibraryPage } from "./pages/LibraryPage";
 import { NewsPage } from "./pages/NewsPage";
 import { ScanPage } from "./pages/ScanPage";
 
+/** דף לכתובת שלא קיימת בתוך האפליקציה */
 function NotFoundPage() {
   return (
     <div>
@@ -27,6 +28,7 @@ function NotFoundPage() {
   );
 }
 
+/** הניתוב: דפי כניסה פתוחים; כל השאר מאחורי RequireAuth ובתוך ה-Layout */
 export function App() {
   return (
     <Routes>

@@ -8,6 +8,7 @@ import type { TreatmentOption } from "@cropguard/shared-types";
 import type { PrismaClient } from "../generated/prisma/client.js";
 import { activeIngredientHe } from "../i18n/activeIngredients.js";
 
+/** תוכנית טיפול לאבחון: הנחיה בעברית, האם יש טיפול כימי, חומרים ומוצרים, והאם יש מחיר לא מאומת */
 export interface TreatmentPlan {
   guidanceHe: string;
   chemicalControl: boolean;
@@ -16,12 +17,15 @@ export interface TreatmentPlan {
   hasUnverifiedPrices: boolean;
 }
 
+/** ההנחיה לעלה בריא - בלי המלצות ריסוס */
 export const HEALTHY_GUIDANCE_HE =
   "העלה נראה בריא. אין צורך בטיפול נגד מחלות על סמך התמונה; המשיכו בהשקיה ובדישון מאוזנים ובמעקב שוטף.";
 
+/** הנחיה כשאין המלצה במסד לתווית (לא אמור לקרות - בדיקה מוודאת כיסוי מלא) */
 export const MISSING_GUIDANCE_HE =
   "לא נמצאה המלצת טיפול למחלה הזו במערכת. מומלץ להתייעץ עם מדריך הגנת הצומח.";
 
+/** ★ התאמה לשוק הישראלי: תוכנית טיפול לתווית אחת - ההמלצה מהמסד, והמוצרים עם טווחי מחירים בשקלים */
 export async function buildTreatmentPlan(
   prisma: PrismaClient,
   modelLabel: string,

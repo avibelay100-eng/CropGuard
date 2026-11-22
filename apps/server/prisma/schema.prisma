@@ -99,7 +99,7 @@ model Diagnosis {
   isHealthy        Boolean
   /// החומר הפעיל שהומלץ, או null (עלה בריא / מחלה בלי טיפול כימי / אי-התאמה לגידול)
   activeIngredient String?
-  /// הצמח שהמודל זיהה לא תאם לגידול של החלקה
+  /// ★ Crop Mismatch Guard: הצמח שהמודל זיהה לא תאם לגידול של החלקה
   cropMismatch     Boolean  @default(false)
   createdAt        DateTime @default(now())
 
@@ -112,7 +112,7 @@ model Diagnosis {
   @@map("diagnoses")
 }
 
-/// טווח מחירים של מוצר מסחרי לפי חומר פעיל (מילון המחירים)
+/// ★ התאמה לשוק הישראלי: טווח מחירים בשקלים של מוצר מסחרי לפי חומר פעיל (מילון המחירים)
 model ProductPriceRange {
   id               String   @id @default(cuid())
   /// שם החומר הפעיל באנגלית, באותיות קטנות, למשל "mancozeb"

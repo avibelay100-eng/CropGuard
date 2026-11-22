@@ -19,6 +19,7 @@ export class HttpError extends Error {
   }
 }
 
+// קיצורים ליצירת השגיאות הנפוצות - כך כל route זורק שגיאה בשורה אחת, עם הקוד הנכון
 export const badRequest = (message: string) => new HttpError(400, "bad_request", message);
 export const validationError = (message: string) => new HttpError(422, "validation_error", message);
 export const unauthorized = (message = "Authentication required.") => new HttpError(401, "unauthorized", message);
@@ -26,6 +27,7 @@ export const forbidden = (message = "You do not have permission to do this.") =>
 export const notFound = (message: string) => new HttpError(404, "not_found", message);
 export const conflict = (message: string) => new HttpError(409, "conflict", message);
 
+/** גוף השגיאה האחיד: {error, detail}. הלקוח מתרגם את error להודעה בעברית */
 export function errorBody(code: ServerErrorCode, detail: string): ServerErrorResponse {
   return { error: code, detail };
 }
@@ -58,6 +60,10 @@ function classify(error: unknown): HttpError {
   return new HttpError(500, "internal_error", "Internal server error.");
 }
 
+/**
+ * ה-handler האחרון של Express: כל שגיאה שנזרקה מגיעה לכאן.
+ * 5xx נרשמות ללוג עם כל הפרטים, אבל ללקוח יוצאת רק הודעה כללית - בלי דליפת מידע פנימי.
+ */
 export const errorHandler: ErrorRequestHandler = (error, request, response, _next) => {
   const httpError = classify(error);
   if (httpError.status >= 500) {
@@ -68,6 +74,7 @@ export const errorHandler: ErrorRequestHandler = (error, request, response, _nex
   response.status(httpError.status).json(errorBody(httpError.code, httpError.message));
 };
 
+/** כתובת שלא קיימת - 404 באותו פורמט אחיד */
 export const notFoundHandler: RequestHandler = (request, response) => {
   response.status(404).json(errorBody("not_found", `Route ${request.method} ${request.path} not found.`));
 };

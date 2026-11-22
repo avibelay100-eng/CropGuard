@@ -43,6 +43,7 @@ function useRedirectTarget(): string {
   return from && from !== "/login" && from !== "/register" ? from : "/scan";
 }
 
+/** מסך ההתחברות. אחרי הצלחה user מתעדכן וההפניה קורית בשורת ה-Navigate - נתיב הפניה אחד בלבד */
 export function LoginPage() {
   const { user, login } = useAuth();
   const target = useRedirectTarget();
@@ -111,6 +112,7 @@ export function LoginPage() {
 
 type RegisterRole = NonNullable<RegisterRequest["role"]>;
 
+/** מסך ההרשמה: אימות בצד הלקוח לפני שליחה, טלפון לא חובה, והפניה למסך החלקות אחרי הצלחה */
 export function RegisterPage() {
   const { user, register } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", role: "FARMER" as RegisterRole });

@@ -7,6 +7,10 @@
 
 const ISRAELI_MOBILE = /^5\d{8}$/; // אחרי הקידומת: 5 ואז 8 ספרות (050, 052, 054...)
 
+/**
+ * ★ התאמה לשוק הישראלי: מנרמל מספר נייד ישראלי לכל הצורות הנפוצות (050-..., +972..., 972...).
+ * מחזיר null למספר שאינו נייד ישראלי (05X ו-9 ספרות) - כך כל מספר נשמר ונמצא בצורה אחת.
+ */
 export function normalizeIsraeliMobile(input: string): string | null {
   const digits = input.replace(/[\s\-().]/g, "");
   let national: string;

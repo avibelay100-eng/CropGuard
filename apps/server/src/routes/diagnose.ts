@@ -36,14 +36,18 @@ function isAcceptedImageType(mimetype: string): boolean {
   return mimetype.startsWith("image/") || mimetype === "application/octet-stream";
 }
 
+/** הסתייגות קבועה בעברית שמצורפת לכל אבחון - המערכת לא מחליפה מדריך הגנת הצומח */
 export const DISCLAIMER_HE =
   "האבחון מבוסס על מודל בינה מלאכותית ואינו מחליף בדיקה של מדריך הגנת הצומח. " +
   "לפני שימוש בתכשיר יש לוודא שהוא רשום בישראל לגידול ולמחלה ולפעול לפי התווית.";
+/** אזהרה כשהוודאות מתחת לסף, או כשיש אי-התאמה לגידול */
 export const UNCERTAIN_WARNING_HE =
   "הוודאות של האבחון נמוכה. מומלץ לצלם שוב עלה בודד, מקרוב ובתאורה טובה, או להתייעץ עם מדריך.";
+/** אזהרה כשלפחות מחיר אחד בתשובה הוא ערך דוגמה שלא אומת */
 export const UNVERIFIED_PRICES_WARNING_HE =
   "המחירים המוצגים הם הערכה בלבד ועדיין לא אומתו מול מחירון ספק.";
 
+/** בונה את נתיב האבחון. מקבל את לקוח ה-AI ואת אחסון התמונות מבחוץ - בבדיקות הם מדומים */
 export function diagnoseRouter({ prisma, config, aiClient, imageStore }: AppDeps): Router {
   const router = Router();
 
@@ -53,6 +57,11 @@ export function diagnoseRouter({ prisma, config, aiClient, imageStore }: AppDeps
     limits: { fileSize: config.maxUploadBytes, files: 1, fields: 5 },
   });
 
+  /**
+   * ★ מנגנון ליבה של CropGuard: הנתיב המרכזי - תמונה -> AI -> בדיקת התאמה לגידול -> המלצות ומחירים -> שמירה -> תשובה בעברית.
+   * הסדר מכוון: הרשאה לפני AI (לא מבזבזים חישוב), שמירת התמונה רק אחרי שה-AI הצליח,
+   * ומחיקתה אם שמירת האבחון נכשלת (בלי קבצים יתומים).
+   */
   router.post("/", requireAuth(prisma, config.jwtSecret), upload.single("image"), async (request, response) => {
     const user = request.user!;
     const file = request.file;

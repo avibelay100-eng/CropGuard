@@ -7,11 +7,13 @@ import jwt from "jsonwebtoken";
 
 import type { Role } from "../generated/prisma/client.js";
 
+/** מה נכנס לטוקן: רק מזהה ותפקיד - בלי מידע אישי, כי JWT קריא לכל מי שמחזיק בו */
 export interface TokenPayload {
   sub: string;
   role: Role;
 }
 
+/** חותם JWT ב-HS256 עם תוקף, ומחזיר גם את זמן התפוגה כדי שהלקוח יוכל להציג/לנהל אותו */
 export function signToken(
   payload: TokenPayload,
   secret: string,

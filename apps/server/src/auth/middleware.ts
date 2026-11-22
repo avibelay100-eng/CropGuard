@@ -13,6 +13,10 @@ import { forbidden, unauthorized } from "../errors.js";
 import type { PrismaClient, Role } from "../generated/prisma/client.js";
 import { verifyToken } from "./jwt.js";
 
+/**
+ * אימות כל בקשה: בדיקת חתימה ותוקף, טעינת המשתמש מהמסד, ודחיית טוקן שהונפק לפני שינוי סיסמה.
+ * בסוף - request.user זמין לכל route שאחריו.
+ */
 export function requireAuth(prisma: PrismaClient, jwtSecret: string): RequestHandler {
   return async (request, _response, next) => {
     const header = request.headers.authorization ?? "";
@@ -40,6 +44,7 @@ export function requireAuth(prisma: PrismaClient, jwtSecret: string): RequestHan
   };
 }
 
+/** הרשאה לפי תפקיד (RBAC): מאפשר רק את התפקידים שהועברו; משתמש אחר מקבל 403 */
 export function requireRole(...roles: Role[]): RequestHandler {
   return (request, _response, next) => {
     if (!request.user) throw unauthorized();

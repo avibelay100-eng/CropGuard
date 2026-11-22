@@ -8,6 +8,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+/** הממשק לאחסון תמונות - מאפשר להחליף בעתיד דיסק מקומי באחסון ענן בלי לגעת ב-routes */
 export interface ImageStore {
   /** שומר את התמונה ומחזיר מזהה (נשמר ב-Diagnosis.imageUrl) */
   save(buffer: Buffer, mimetype: string): Promise<string>;
@@ -24,6 +25,7 @@ const EXTENSIONS: Readonly<Record<string, string>> = {
   "image/tiff": ".tiff",
 };
 
+/** אחסון בדיסק: שם קובץ אקראי (UUID) ולא השם של המשתמש - מונע התנגשויות ו-path traversal */
 export function createDiskImageStore(uploadDir: string): ImageStore {
   return {
     async save(buffer, mimetype) {

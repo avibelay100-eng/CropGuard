@@ -8,6 +8,7 @@ import { Navigate, Outlet, useLocation } from "react-router";
 import { useAuth } from "../auth/AuthContext";
 import { Spinner } from "./ui";
 
+/** שומר מסכים: בזמן בדיקת הטוקן - ספינר; בלי משתמש - הפניה להתחברות עם זיכרון של המסך המבוקש */
 export function RequireAuth() {
   const { user, loading } = useAuth();
   const location = useLocation();

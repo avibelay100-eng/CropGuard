@@ -19,16 +19,19 @@ export function formatPercent(value: number): string {
 
 const dateTime = new Intl.DateTimeFormat("he-IL", { dateStyle: "medium", timeStyle: "short" });
 
+/** תאריך ושעה בעברית, למשל "22 בנוב׳ 2026, 12:39" */
 export function formatDateTime(iso: string): string {
   return dateTime.format(new Date(iso));
 }
 
 const dateOnly = new Intl.DateTimeFormat("he-IL", { dateStyle: "medium" });
 
+/** תאריך בלבד בעברית */
 export function formatDate(iso: string): string {
   return dateOnly.format(new Date(iso));
 }
 
+/** שמות התפקידים בעברית לתצוגה */
 export const ROLE_LABELS_HE: Record<UserRole, string> = {
   FARMER: "חקלאי",
   AGRONOMIST: "אגרונום",

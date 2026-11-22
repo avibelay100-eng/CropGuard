@@ -14,6 +14,7 @@ const BUTTON_STYLES: Record<ButtonVariant, string> = {
   danger: "bg-blight text-white hover:brightness-90 disabled:opacity-50",
 };
 
+/** כפתור בארבעה סגנונות (ראשי, משני, שקט, מסוכן). ב-React 19 ref עובר כ-prop רגיל */
 export function Button({
   variant = "primary",
   className = "",
@@ -57,6 +58,7 @@ function FieldShell({ label, hint, error, children }: FieldShellProps) {
   );
 }
 
+/** שדה טקסט עם תווית, רמז ושגיאה - מחוברים לקוראי מסך (aria-describedby, aria-invalid) */
 export function TextField({
   label,
   hint,
@@ -72,6 +74,7 @@ export function TextField({
   );
 }
 
+/** רשימה נפתחת באותה מעטפת נגישה כמו שדה הטקסט */
 export function SelectField({
   label,
   hint,
@@ -104,6 +107,7 @@ export function Notice({ tone = "error", children }: { tone?: "error" | "warning
   );
 }
 
+/** ספינר טעינה בתוך <output>, כך שקורא מסך מקריא את הטקסט */
 export function Spinner({ label }: { label: string }) {
   return (
     <output className="flex items-center gap-3 text-soil">

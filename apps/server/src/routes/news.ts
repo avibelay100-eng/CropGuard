@@ -14,10 +14,12 @@ const querySchema = z.object({
   lang: z.enum(["he", "en"]).optional(),
 });
 
+/** בונה את נתיב החדשות; newsService מוזרק (בבדיקות - רשימה קבועה בלי אינטרנט) */
 export function newsRouter({ prisma, config, newsService }: AppDeps): Router {
   const router = Router();
   router.use(requireAuth(prisma, config.jwtSecret));
 
+  // החדשות מהמטמון של השירות, עם סינון שפה אופציונלי
   router.get("/", async (request, response) => {
     const { lang } = querySchema.parse(request.query);
     const news = await newsService.get();

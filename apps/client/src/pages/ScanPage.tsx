@@ -13,6 +13,7 @@ import { ImagePicker } from "../components/ImagePicker";
 import { Button, Notice, PageHeader, SelectField, Spinner } from "../components/ui";
 import { CROPS, cropLabelHe } from "../lib/crops";
 
+/** ★ מנגנון ליבה של CropGuard: מסך הסריקה - חלקה + תמונה -> אבחון. בחירת החלקה היא שמאפשרת לשרת לבדוק התאמה לגידול */
 export function ScanPage() {
   const [fields, setFields] = useState<FieldDto[] | null>(null);
   const [fieldsError, setFieldsError] = useState<string | null>(null);
