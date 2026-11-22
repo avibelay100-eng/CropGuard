@@ -41,6 +41,20 @@ describe("with the real model", () => {
     });
   });
 
+  it("serves the Hebrew test page at /", async () => {
+    const response = await app.inject({ method: "GET", url: "/" });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["content-type"]).toContain("text/html");
+    expect(response.body).toContain('dir="rtl"');
+    expect(response.body).toContain("CropGuard");
+    expect(response.body).toContain('fetch("/predict"');
+  });
+
+  it("keeps the test page out of the API docs", async () => {
+    const paths = Object.keys((await app.inject({ method: "GET", url: "/docs/json" })).json().paths);
+    expect(paths.sort()).toEqual(["/health", "/predict"]);
+  });
+
   it("publishes OpenAPI docs titled CropGuard AI Engine", async () => {
     const response = await app.inject({ method: "GET", url: "/docs/json" });
     expect(response.statusCode).toBe(200);

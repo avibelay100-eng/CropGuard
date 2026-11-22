@@ -15,6 +15,7 @@
 | `src/labels.ts` | טעינת `labels-38.txt`, שמות קריאים וזיהוי "בריא" |
 | `src/schemas.ts` | מבני ה-JSON (טיפוסים + סכמות לתיעוד) |
 | `src/config.ts` | הגדרות ממשתני סביבה `AI_ENGINE_*` |
+| `public/index.html` | דף בדיקה בעברית שמוגש בכתובת `/` |
 | `test/` | בדיקות (Vitest) שרצות מול המודל האמיתי |
 | `model/cropora_model.onnx` | המודל שהשירות מריץ |
 | `model/cropora_model.keras` | המודל המקורי (מקור ההמרה) |
@@ -30,8 +31,11 @@ npm install
 npm run dev
 ```
 
-השרת עולה בכתובת `http://localhost:8001`. בכתובת `http://localhost:8001/docs`
-יש תיעוד אינטראקטיבי שאפשר להעלות ממנו תמונה ולראות את התשובה.
+השרת עולה בכתובת `http://localhost:8001`. ממתינים לשורה `CropGuard AI Engine ready` בלוג, ואז:
+
+- **`http://localhost:8001/`** - דף בדיקה בעברית: בוחרים תמונה של עלה, לוחצים "בדיקת העלה"
+  ורואים את שם המחלה, אחוז הוודאות והאם העלה בריא או נגוע.
+- **`http://localhost:8001/docs`** - תיעוד ה-API למפתחים (Swagger).
 
 לייצור:
 

@@ -24,7 +24,9 @@ async function main(): Promise<void> {
   }
 
   await app.listen({ host: settings.host, port: settings.port });
-  app.log.info(`${SERVICE_NAME} ready - docs at http://localhost:${settings.port}/docs`);
+  app.log.info(
+    `${SERVICE_NAME} ready - test page at http://localhost:${settings.port}/ , API docs at http://localhost:${settings.port}/docs`,
+  );
 }
 
 main().catch((err: unknown) => {

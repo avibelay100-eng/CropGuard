@@ -2,6 +2,7 @@
  * CropGuard AI Engine - בניית אפליקציית ה-REST (Fastify).
  *
  * נקודות קצה:
+ *   GET  /         - דף בדיקה בעברית: מעלים תמונה ורואים את התוצאה בגדול
  *   GET  /health   - האם השירות חי והאם המודל נטען
  *   POST /predict  - העלאת תמונת עלה (multipart, שדה בשם "image"); מחזיר מחלה, ודאות ובריא/נגוע
  *   GET  /docs     - תיעוד אינטראקטיבי (Swagger) שאפשר לנסות ממנו את ה-API
@@ -11,12 +12,13 @@
  */
 
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import multipart from "@fastify/multipart";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 
-import { SERVICE_NAME, SERVICE_VERSION, loadSettings, type Settings } from "./config.js";
+import { SERVICE_NAME, SERVICE_VERSION, TEST_PAGE_PATH, loadSettings, type Settings } from "./config.js";
 import { InvalidImageError, prepareImage } from "./imageProcessing.js";
 import { loadLabels, parseLabel } from "./labels.js";
 import { InferenceError, ModelLoadError, loadPredictor, topKIndices, type Predictor } from "./modelLoader.js";
@@ -187,6 +189,21 @@ export async function buildApp(
   });
 
   // --- נקודות קצה -------------------------------------------------------------
+
+  // דף הבדיקה נקרא פעם אחת לזיכרון. אם הוא חסר, השירות עדיין עובד - רק בלי הדף.
+  let testPage: string | null = null;
+  try {
+    testPage = await readFile(TEST_PAGE_PATH, "utf-8");
+  } catch {
+    app.log.warn({ path: TEST_PAGE_PATH }, "Test page not found, GET / is disabled");
+  }
+  if (testPage !== null) {
+    const page = testPage;
+    // hide: הדף לא מופיע בתיעוד ה-API, כי הוא לא חלק מה-API
+    app.get("/", { schema: { hide: true } }, async (_request, reply) => {
+      return reply.type("text/html; charset=utf-8").send(page);
+    });
+  }
 
   app.get(
     "/health",

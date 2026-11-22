@@ -25,7 +25,8 @@ npm install
 npm run dev:ai
 ```
 
-שירות ה-AI עולה ב-`http://localhost:8001`, והתיעוד שלו ב-`http://localhost:8001/docs`.
+שירות ה-AI עולה ב-`http://localhost:8001`. שם יש דף בדיקה בעברית להעלאת תמונה,
+ותיעוד ה-API נמצא ב-`http://localhost:8001/docs`.
 
 | פקודה | מה היא עושה |
 |---|---|

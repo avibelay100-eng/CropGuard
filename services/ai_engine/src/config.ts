@@ -11,10 +11,13 @@ export const SERVICE_VERSION = "0.1.0";
 
 // תיקיית השירות (services/ai_engine).
 // הקוד רץ מתוך src/ (בפיתוח עם tsx) או מתוך dist/ (אחרי build) - שתיהן רמה אחת מתחת לשירות.
-const SERVICE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export const SERVICE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 // המודל והתוויות יושבים בתוך השירות עצמו, כך שהשירות עומד בפני עצמו
 export const MODEL_DIR = path.join(SERVICE_DIR, "model");
+
+// דף הבדיקה (public/index.html) שמוגש בכתובת "/"
+export const TEST_PAGE_PATH = path.join(SERVICE_DIR, "public", "index.html");
 
 export interface Settings {
   /** נתיב לקובץ המודל בפורמט ONNX (הומר מ-cropora_model.keras) */
