@@ -1,0 +1,3 @@
+# קוד שנוצר אוטומטית ע"י "prisma generate" - נוצר מחדש בכל התקנה
+src/generated/prisma/
+.env

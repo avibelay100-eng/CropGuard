@@ -8,7 +8,8 @@
   },
   "workspaces": [
     "packages/shared-types",
-    "services/ai_engine"
+    "services/ai_engine",
+    "apps/server"
   ],
   "scripts": {
     "dev:ai": "npm run dev -w services/ai_engine",

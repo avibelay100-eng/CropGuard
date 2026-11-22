@@ -1,0 +1,125 @@
+// סכמת מסד הנתונים של CropGuard (PostgreSQL).
+// אחרי כל שינוי כאן: "npm run prisma:generate" (קוד TypeScript) ו-"npm run db:migrate" (טבלאות).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // הכתובת מוגדרת ב-prisma.config.ts (משתנה הסביבה DATABASE_URL)
+}
+
+/// תפקיד המשתמש במערכת
+enum Role {
+  /// חקלאי: מנהל חלקות ומעלה תמונות לאבחון
+  FARMER
+  /// אגרונום: מלווה חקלאים ובודק אבחונים
+  AGRONOMIST
+  /// מנהל מערכת
+  ADMIN
+}
+
+/// משתמש במערכת
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  /// גיבוב (hash) של הסיסמה - לעולם לא הסיסמה עצמה
+  passwordHash String
+  role         Role     @default(FARMER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  fields Field[]
+
+  @@map("users")
+}
+
+/// חלקה חקלאית של משתמש
+model Field {
+  id        String   @id @default(cuid())
+  /// שם החלקה, למשל "חממה 3"
+  name      String
+  /// סוג הגידול, למשל "Tomato" (כמו שם הצמח בתוויות של מודל ה-AI)
+  cropType  String
+  /// קו רוחב במעלות עשרוניות (-90..90)
+  latitude  Float
+  /// קו אורך במעלות עשרוניות (-180..180)
+  longitude Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerId String
+  /// מחיקת משתמש מוחקת גם את החלקות שלו
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  diagnoses Diagnosis[]
+
+  @@index([ownerId])
+  @@map("fields")
+}
+
+/// אבחון של תמונת עלה אחת, כפי שהחזיר שירות ה-AI
+model Diagnosis {
+  id               String   @id @default(cuid())
+  /// כתובת או נתיב של תמונת העלה שנשמרה
+  imageUrl         String
+  /// התווית הגולמית מהמודל, למשל "Tomato___Late_blight"
+  modelLabel       String
+  /// שם המחלה לתצוגה, למשל "Tomato Late blight"
+  diseaseName      String
+  /// אחוז הוודאות כהסתברות 0..1 (כמו confidence בתשובת שירות ה-AI)
+  confidence       Float
+  isHealthy        Boolean
+  /// החומר הפעיל שהומלץ, או null (עלה בריא / מחלה בלי טיפול כימי)
+  activeIngredient String?
+  createdAt        DateTime @default(now())
+
+  fieldId String
+  /// מחיקת חלקה מוחקת גם את האבחונים שלה
+  field   Field  @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@index([fieldId, createdAt])
+  @@index([modelLabel])
+  @@map("diagnoses")
+}
+
+/// טווח מחירים של מוצר מסחרי לפי חומר פעיל (מילון המחירים)
+model ProductPriceRange {
+  id               String   @id @default(cuid())
+  /// שם החומר הפעיל באנגלית, באותיות קטנות, למשל "mancozeb"
+  activeIngredient String
+  /// שם המוצר המסחרי, למשל "Dithane M-45"
+  productName      String
+  /// גודל האריזה שהמחיר מתייחס אליו, למשל "1 kg"
+  packageSize      String
+  minPriceILS      Decimal  @db.Decimal(10, 2)
+  maxPriceILS      Decimal  @db.Decimal(10, 2)
+  /// false עד שהמחיר נבדק מול מקור אמיתי (מחירון ספק / חנות)
+  isVerified       Boolean  @default(false)
+  /// מאיפה הגיע המחיר
+  priceSource      String?
+  updatedAt        DateTime @updatedAt
+
+  @@unique([activeIngredient, productName, packageSize])
+  @@index([activeIngredient])
+  @@map("product_price_ranges")
+}
+
+/// החומרים הפעילים המומלצים לכל מחלה שהמודל מזהה
+model TreatmentRecommendation {
+  id                String   @id @default(cuid())
+  /// תווית המחלה מהמודל, למשל "Tomato___Late_blight"
+  modelLabel        String   @unique
+  /// חומרים פעילים מקובלים (שמות כמו ב-ProductPriceRange.activeIngredient); ריק אם אין טיפול כימי
+  activeIngredients String[]
+  /// false למחלות שאין להן ריפוי כימי (וירוסים, HLB, אסקה)
+  chemicalControl   Boolean
+  /// הנחיה קצרה בעברית למשתמש
+  note              String
+  updatedAt         DateTime @updatedAt
+
+  @@map("treatment_recommendations")
+}
