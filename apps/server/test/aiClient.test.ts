@@ -59,7 +59,8 @@ describe("HTTP AI client", () => {
     expect(result.model_label).toBe("Tomato___Late_blight");
     expect(result.confidence).toBe(0.8995);
     expect(seen.method).toBe("POST");
-    expect(seen.url).toBe("/predict");
+    // כל 38 ההסתברויות - לבדיקת ההתאמה לגידול של החלקה
+    expect(seen.url).toBe("/predict?top_k=38");
     expect(seen.contentType).toMatch(/^multipart\/form-data; boundary=/);
     expect(seen.body!.toString("latin1")).toContain('name="image"; filename="leaf.png"');
     expect(seen.body!.includes(PNG_BYTES)).toBe(true);

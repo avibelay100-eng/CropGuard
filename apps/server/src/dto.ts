@@ -8,12 +8,13 @@ import type { DiagnosisHistoryItem, FieldDto, UserDto } from "@cropguard/shared-
 import type { Diagnosis, Field, User } from "./generated/prisma/client.js";
 import { describeDisease } from "./i18n/diseases.js";
 
-export function toUserDto(user: Pick<User, "id" | "email" | "name" | "role" | "createdAt">): UserDto {
+export function toUserDto(user: Pick<User, "id" | "email" | "name" | "role" | "phone" | "createdAt">): UserDto {
   return {
     id: user.id,
     email: user.email,
     name: user.name,
     role: user.role,
+    phone: user.phone,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -50,5 +51,6 @@ export function toDiagnosisHistoryItem(diagnosis: DiagnosisWithField): Diagnosis
     isHealthy: diagnosis.isHealthy,
     confidence: diagnosis.confidence,
     activeIngredient: diagnosis.activeIngredient,
+    cropMismatch: diagnosis.cropMismatch,
   };
 }

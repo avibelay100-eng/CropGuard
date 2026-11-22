@@ -41,6 +41,43 @@ export async function buildTreatmentPlan(
     orderBy: [{ minPriceILS: "asc" }, { productName: "asc" }],
   });
 
+  return composePlan(recommendation, products);
+}
+
+/**
+ * תוכניות טיפול לכמה תוויות בבת אחת, בשתי שאילתות בלבד (לספריית המחלות),
+ * במקום שתי שאילתות לכל תווית.
+ */
+export async function buildAllTreatmentPlans(
+  prisma: PrismaClient,
+  labels: ReadonlyArray<{ modelLabel: string; isHealthy: boolean }>,
+): Promise<Map<string, TreatmentPlan>> {
+  const [recommendations, products] = await Promise.all([
+    prisma.treatmentRecommendation.findMany(),
+    prisma.productPriceRange.findMany({ orderBy: [{ minPriceILS: "asc" }, { productName: "asc" }] }),
+  ]);
+  const byLabel = new Map(recommendations.map((recommendation) => [recommendation.modelLabel, recommendation]));
+
+  return new Map(
+    labels.map(({ modelLabel, isHealthy }) => {
+      if (isHealthy) {
+        return [modelLabel, { guidanceHe: HEALTHY_GUIDANCE_HE, chemicalControl: false, treatments: [], hasUnverifiedPrices: false }];
+      }
+      const recommendation = byLabel.get(modelLabel);
+      if (!recommendation) {
+        return [modelLabel, { guidanceHe: MISSING_GUIDANCE_HE, chemicalControl: false, treatments: [], hasUnverifiedPrices: false }];
+      }
+      const relevant = products.filter((product) => recommendation.activeIngredients.includes(product.activeIngredient));
+      return [modelLabel, composePlan(recommendation, relevant)];
+    }),
+  );
+}
+
+type Recommendation = Awaited<ReturnType<PrismaClient["treatmentRecommendation"]["findFirstOrThrow"]>>;
+type Product = Awaited<ReturnType<PrismaClient["productPriceRange"]["findFirstOrThrow"]>>;
+
+/** מרכיב תוכנית טיפול מהמלצה ומהמוצרים הרלוונטיים */
+function composePlan(recommendation: Recommendation, products: Product[]): TreatmentPlan {
   // שומרים על סדר ההמלצה (החומר הראשון הוא המועדף)
   const treatments: TreatmentOption[] = recommendation.activeIngredients.map((ingredient) => ({
     activeIngredient: ingredient,

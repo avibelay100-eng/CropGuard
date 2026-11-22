@@ -23,6 +23,12 @@ export function formatDateTime(iso: string): string {
   return dateTime.format(new Date(iso));
 }
 
+const dateOnly = new Intl.DateTimeFormat("he-IL", { dateStyle: "medium" });
+
+export function formatDate(iso: string): string {
+  return dateOnly.format(new Date(iso));
+}
+
 export const ROLE_LABELS_HE: Record<UserRole, string> = {
   FARMER: "חקלאי",
   AGRONOMIST: "אגרונום",

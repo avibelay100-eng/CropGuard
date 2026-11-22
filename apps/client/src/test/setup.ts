@@ -37,3 +37,15 @@ afterEach(() => {
 // jsdom לא מממש את הפונקציות האלה
 URL.createObjectURL = vi.fn(() => "blob:preview");
 URL.revokeObjectURL = vi.fn();
+
+// jsdom לא מממש את showModal/close של <dialog>; מימוש מינימלי שמתנהג כמו בדפדפן
+if (typeof HTMLDialogElement !== "undefined" && !HTMLDialogElement.prototype.showModal) {
+  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+    if (!this.hasAttribute("open")) return;
+    this.removeAttribute("open");
+    this.dispatchEvent(new Event("close"));
+  };
+}

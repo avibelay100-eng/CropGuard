@@ -1,5 +1,6 @@
 /**
- * GET /api/diagnoses - היסטוריית אבחונים, מהחדש לישן.
+ * GET    /api/diagnoses     - היסטוריית אבחונים, מהחדש לישן.
+ * DELETE /api/diagnoses/:id - מחיקת אבחון (בעל החלקה או מנהל בלבד).
  *
  * סינון (query string):
  *   fieldId  - רק אבחונים של חלקה מסוימת
@@ -27,7 +28,7 @@ const querySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
-export function diagnosesRouter({ prisma, config }: AppDeps): Router {
+export function diagnosesRouter({ prisma, config, imageStore }: AppDeps): Router {
   const router = Router();
   router.use(requireAuth(prisma, config.jwtSecret));
 
@@ -73,6 +74,35 @@ export function diagnosesRouter({ prisma, config }: AppDeps): Router {
       offset: query.offset,
     };
     response.json(body);
+  });
+
+  /**
+   * מחיקת אבחון. מי מורשה:
+   *   - בעל החלקה (כל תפקיד) - אלה הנתונים שלו
+   *   - ADMIN - כל אבחון
+   * אגרונום רואה אבחונים של כולם אבל לא מוחק נתונים של חקלאי אחר (403).
+   * חקלאי שמנסה למחוק אבחון של אחר מקבל 404 - כמו בשאר המערכת, לא חושפים שהוא קיים.
+   */
+  router.delete("/:id", async (request, response) => {
+    const user = request.user!;
+    const id = String(request.params["id"] ?? "");
+
+    const diagnosis = await prisma.diagnosis.findUnique({
+      where: { id },
+      select: { id: true, imageUrl: true, field: { select: { ownerId: true } } },
+    });
+    const isOwner = diagnosis?.field.ownerId === user.id;
+    if (!diagnosis || (!isOwner && !canSeeAllFarmers(user.role))) throw notFound("Diagnosis not found.");
+    if (!isOwner && user.role !== "ADMIN") throw forbidden("Only the field owner or an admin can delete a diagnosis.");
+
+    await prisma.diagnosis.delete({ where: { id: diagnosis.id } });
+    // התמונה נמחקת אחרי השורה במסד; כשל במחיקת הקובץ לא מבטל את המחיקה, רק נרשם בלוג
+    await imageStore.remove(diagnosis.imageUrl).catch((err: unknown) => {
+      request.log?.warn({ err, imageUrl: diagnosis.imageUrl }, "Could not delete diagnosis image");
+    });
+
+    request.log?.info({ diagnosisId: diagnosis.id, by: user.id }, "Diagnosis deleted");
+    response.status(204).end();
   });
 
   return router;

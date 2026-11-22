@@ -32,6 +32,12 @@ export interface ServerConfig {
   /** כמה בקשות התחברות/הרשמה מותרות מכל IP ב-15 דקות; 0 מבטל את ההגבלה */
   authRateLimit: number;
   logLevel: string;
+  /** תוקף קוד שחזור הסיסמה בדקות */
+  resetCodeTtlMinutes: number;
+  /** איך שולחים SMS: console (פיתוח - מדפיס בטרמינל) או twilio */
+  sms:
+    | { provider: "console" }
+    | { provider: "twilio"; accountSid: string; authToken: string; from: string };
 }
 
 const envSchema = z.object({
@@ -47,6 +53,11 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default("http://localhost:5173"),
   AUTH_RATE_LIMIT: z.coerce.number().int().min(0).default(20),
   LOG_LEVEL: z.string().default("info"),
+  RESET_CODE_TTL_MINUTES: z.coerce.number().int().min(1).max(60).default(10),
+  SMS_PROVIDER: z.enum(["console", "twilio"]).default("console"),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_FROM: z.string().optional(),
 });
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -56,6 +67,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     throw new Error(`Invalid server configuration:\n${problems}`);
   }
   const values = parsed.data;
+
+  let sms: ServerConfig["sms"] = { provider: "console" };
+  if (values.SMS_PROVIDER === "twilio") {
+    const { TWILIO_ACCOUNT_SID: accountSid, TWILIO_AUTH_TOKEN: authToken, TWILIO_FROM: from } = values;
+    if (!accountSid || !authToken || !from) {
+      throw new Error("Invalid server configuration:\n  - SMS_PROVIDER=twilio requires TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM");
+    }
+    sms = { provider: "twilio", accountSid, authToken, from };
+  }
+
   return {
     port: values.PORT,
     databaseUrl: values.DATABASE_URL,
@@ -69,5 +90,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     corsOrigins: values.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean),
     authRateLimit: values.AUTH_RATE_LIMIT,
     logLevel: values.LOG_LEVEL.toLowerCase(),
+    resetCodeTtlMinutes: values.RESET_CODE_TTL_MINUTES,
+    sms,
   };
 }

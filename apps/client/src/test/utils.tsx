@@ -51,8 +51,11 @@ export function mockFetch(routes: MockRoute[]) {
     );
     if (!route) throw new Error(`Unmocked request: ${method} ${path}`);
     if (route.wait) await route.wait;
+    const status = route.status ?? 200;
+    // 204 ("אין תוכן") אסור שיהיה לו גוף - בדיוק כמו בשרת האמיתי
+    if (status === 204) return new Response(null, { status });
     return new Response(JSON.stringify(route.body ?? null), {
-      status: route.status ?? 200,
+      status,
       headers: { "Content-Type": "application/json" },
     });
   });
@@ -76,6 +79,7 @@ export const farmer: UserDto = {
   email: "avi@example.test",
   name: "אבי כהן",
   role: "FARMER",
+  phone: null,
   createdAt: "2026-11-01T08:00:00.000Z",
 };
 
@@ -131,8 +135,50 @@ export const lateBlightResult: DiagnoseResponse = {
       ],
     },
   ],
+  cropCheck: {
+    fieldCrop: "Tomato",
+    fieldCropHe: "עגבנייה",
+    predictedPlant: "Tomato",
+    predictedPlantHe: "עגבנייה",
+    supported: true,
+    matches: true,
+    fieldCropSharePercent: 99.5,
+    inFieldCrop: [],
+  },
   warningsHe: ["המחירים המוצגים הם הערכה בלבד ועדיין לא אומתו מול מחירון ספק."],
   disclaimerHe: "האבחון מבוסס על מודל בינה מלאכותית ואינו מחליף בדיקה של מדריך הגנת הצומח.",
+};
+
+/** תמונה של צמח אחר בשדה תירס: המודל זיהה עגבנייה */
+export const mismatchResult: DiagnoseResponse = {
+  ...lateBlightResult,
+  uncertain: true,
+  treatments: [],
+  chemicalControl: false,
+  guidanceHe: "לא מוצגות המלצות ריסוס, כי הצמח שזוהה לא תואם לגידול של החלקה.",
+  cropCheck: {
+    fieldCrop: "Corn",
+    fieldCropHe: "תירס",
+    predictedPlant: "Tomato",
+    predictedPlantHe: "עגבנייה",
+    supported: true,
+    matches: false,
+    fieldCropSharePercent: 3.4,
+    inFieldCrop: [
+      {
+        disease: {
+          modelLabel: "Corn___Northern_Leaf_Blight",
+          plantHe: "תירס",
+          nameHe: "כתמת עלים צפונית",
+          displayNameHe: "תירס – כתמת עלים צפונית",
+          nameEn: "Corn Northern Leaf Blight",
+          scientificName: "Exserohilum turcicum",
+        },
+        confidencePercent: 2.4,
+      },
+    ],
+  },
+  warningsHe: ["החלקה מוגדרת כתירס, אבל המודל זיהה עגבנייה. ייתכן שבתמונה צמח אחר."],
 };
 
 export const healthyResult: DiagnoseResponse = {
@@ -167,6 +213,7 @@ export function historyItem(overrides: Partial<DiagnosisHistoryItem> = {}): Diag
     isHealthy: false,
     confidence: 0.8995,
     activeIngredient: "metalaxyl-m + mancozeb",
+    cropMismatch: false,
     ...overrides,
   };
 }

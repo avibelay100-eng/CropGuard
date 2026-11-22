@@ -12,6 +12,8 @@ export interface UserDto {
   email: string;
   name: string;
   role: UserRole;
+  /** טלפון נייד בפורמט בינלאומי (+9725...), לשחזור סיסמה; null אם לא הוגדר */
+  phone: string | null;
   createdAt: string;
 }
 
@@ -27,6 +29,26 @@ export interface RegisterRequest {
   name: string;
   /** ברירת מחדל FARMER */
   role?: Exclude<UserRole, "ADMIN">;
+  /** טלפון נייד ישראלי, לשחזור סיסמה (לא חובה). כל צורה נפוצה מתקבלת: 050-1234567, +972501234567 */
+  phone?: string;
+}
+
+/** גוף הבקשה של PATCH /api/auth/me - עדכון הטלפון (null מוחק אותו) */
+export interface UpdateMeRequest {
+  phone: string | null;
+}
+
+/** שלב 1 בשחזור סיסמה: POST /api/auth/password-reset/request */
+export interface PasswordResetRequest {
+  phone: string;
+}
+
+/** שלב 2 בשחזור סיסמה: POST /api/auth/password-reset/confirm */
+export interface PasswordResetConfirmRequest {
+  phone: string;
+  /** 6 ספרות מה-SMS */
+  code: string;
+  newPassword: string;
 }
 
 /** גוף הבקשה של POST /api/auth/login */
@@ -121,6 +143,28 @@ export interface TreatmentOption {
   products: ProductOffer[];
 }
 
+/**
+ * בדיקת התאמה בין מה שהמודל ראה לבין הגידול של החלקה.
+ * המודל מכיר רק 38 מצבים ב-14 גידולים, ותמיד בוחר אחד מהם - גם כשמצלמים צמח אחר.
+ * לכן משווים לגידול שהחקלאי הגדיר לחלקה.
+ */
+export interface CropCheck {
+  /** הגידול של החלקה, כפי שנשמר (למשל "Corn") */
+  fieldCrop: string;
+  fieldCropHe: string;
+  /** הצמח שהמודל זיהה (מהתחזית המובילה) */
+  predictedPlant: string;
+  predictedPlantHe: string;
+  /** false אם הגידול של החלקה אינו אחד מ-14 הגידולים שהמודל מכיר */
+  supported: boolean;
+  /** האם הצמח שהמודל זיהה הוא הגידול של החלקה */
+  matches: boolean;
+  /** כמה מההסתברות של המודל (0..100) נופלת על הגידול של החלקה */
+  fieldCropSharePercent: number;
+  /** האפשרויות הסבירות ביותר בתוך הגידול של החלקה (הסתברות גולמית של המודל, 0..100) */
+  inFieldCrop: Array<{ disease: DiseaseInfo; confidencePercent: number }>;
+}
+
 /** התשובה של POST /api/diagnose */
 export interface DiagnoseResponse {
   diagnosis: {
@@ -144,7 +188,10 @@ export interface DiagnoseResponse {
   guidanceHe: string;
   /** false למחלות שאין להן טיפול כימי (וירוסים, HLB, אסקה) ולעלה בריא */
   chemicalControl: boolean;
+  /** ריק גם כשהצמח שזוהה לא תואם לגידול של החלקה - כדי לא להמליץ על ריסוס לגידול הלא נכון */
   treatments: TreatmentOption[];
+  /** התאמה לגידול של החלקה */
+  cropCheck: CropCheck;
   /** אזהרות בעברית (ודאות נמוכה, מחירים לא מאומתים) */
   warningsHe: string[];
   /** הסתייגות קבועה בעברית */
@@ -163,6 +210,8 @@ export interface DiagnosisHistoryItem {
   confidence: number;
   /** החומר הפעיל הראשון שהומלץ, או null */
   activeIngredient: string | null;
+  /** הצמח שזוהה לא תאם לגידול של החלקה - יש להתייחס לאבחון בזהירות */
+  cropMismatch: boolean;
 }
 
 /** סינון לפי מצב העלה ב-GET /api/diagnoses?status= */
@@ -178,6 +227,76 @@ export interface DiagnosisListResponse {
 }
 
 // ---------------------------------------------------------------------------
+// ספריית מחלות
+// ---------------------------------------------------------------------------
+
+/** סוג הגורם. אואומיצט (למשל כימשון) נראה כמו פטרייה אבל שייך לקבוצה אחרת */
+export type PathogenType = "fungus" | "oomycete" | "bacterium" | "virus" | "pest" | "healthy";
+
+/** רשומה אחת בספרייה - אחד מ-38 המצבים שהמודל מזהה */
+export interface LibraryEntry {
+  disease: DiseaseInfo;
+  /** שם הצמח באנגלית, כמו cropType של חלקה (למשל "Tomato", "Pepper, bell") */
+  plant: string;
+  pathogenType: PathogenType;
+  pathogenTypeHe: string;
+  symptomsHe: string;
+  preventionHe: string;
+  /** הנחיית טיפול בעברית (גם לעלה בריא) */
+  guidanceHe: string;
+  chemicalControl: boolean;
+  /** חומרים פעילים מקובלים ומוצרים עם טווחי מחירים בשקלים */
+  treatments: TreatmentOption[];
+  /** מקורות המידע (שירותי הדרכה חקלאית) */
+  sources: string[];
+}
+
+/** התשובה של GET /api/library */
+export interface LibraryResponse {
+  entries: LibraryEntry[];
+}
+
+// ---------------------------------------------------------------------------
+// חדשות
+// ---------------------------------------------------------------------------
+
+export type NewsLanguage = "he" | "en";
+
+/** כתבה אחת מאחד ממקורות החדשות */
+export interface NewsItem {
+  /** מזהה יציב (מחושב מהקישור) */
+  id: string;
+  title: string;
+  /** תקציר קצר בטקסט רגיל, בלי HTML; עד ~280 תווים */
+  summary: string;
+  /** קישור לכתבה המלאה באתר המקור (http/https בלבד) */
+  link: string;
+  /** ISO 8601, או null אם המקור לא ציין תאריך */
+  publishedAt: string | null;
+  sourceId: string;
+  sourceName: string;
+  language: NewsLanguage;
+}
+
+/** מצב של מקור חדשות בטעינה האחרונה */
+export interface NewsSourceStatus {
+  id: string;
+  name: string;
+  homepage: string;
+  language: NewsLanguage;
+  ok: boolean;
+  itemCount: number;
+}
+
+/** התשובה של GET /api/news */
+export interface NewsResponse {
+  items: NewsItem[];
+  sources: NewsSourceStatus[];
+  /** מתי המקורות נטענו בפועל (התשובה יכולה להגיע מזיכרון המטמון) */
+  fetchedAt: string;
+}
+
+// ---------------------------------------------------------------------------
 // שגיאות
 // ---------------------------------------------------------------------------
 
@@ -189,6 +308,7 @@ export type ServerErrorCode =
   | "forbidden"
   | "not_found"
   | "conflict"
+  | "invalid_code"
   | "payload_too_large"
   | "unsupported_media_type"
   | "too_many_requests"

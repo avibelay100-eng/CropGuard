@@ -23,18 +23,42 @@ enum Role {
 
 /// משתמש במערכת
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String
   /// גיבוב (hash) של הסיסמה - לעולם לא הסיסמה עצמה
-  passwordHash String
-  role         Role     @default(FARMER)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  passwordHash      String
+  role              Role      @default(FARMER)
+  /// טלפון נייד בפורמט בינלאומי (+9725XXXXXXXX), לשחזור סיסמה; לא חובה
+  phone             String?   @unique
+  /// מתי הסיסמה שונתה לאחרונה; טוקנים שהונפקו לפני כן נדחים
+  passwordChangedAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  fields Field[]
+  fields     Field[]
+  resetCodes PasswordResetCode[]
 
   @@map("users")
+}
+
+/// קוד חד-פעמי לשחזור סיסמה שנשלח ב-SMS
+model PasswordResetCode {
+  id        String    @id @default(cuid())
+  /// HMAC של הקוד - הקוד עצמו לא נשמר
+  codeHash  String
+  expiresAt DateTime
+  /// ניסיונות שגויים; אחרי 5 הקוד נפסל
+  attempts  Int       @default(0)
+  /// מתי נוצל או נפסל; null = עדיין בתוקף
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("password_reset_codes")
 }
 
 /// חלקה חקלאית של משתמש
@@ -73,8 +97,10 @@ model Diagnosis {
   /// אחוז הוודאות כהסתברות 0..1 (כמו confidence בתשובת שירות ה-AI)
   confidence       Float
   isHealthy        Boolean
-  /// החומר הפעיל שהומלץ, או null (עלה בריא / מחלה בלי טיפול כימי)
+  /// החומר הפעיל שהומלץ, או null (עלה בריא / מחלה בלי טיפול כימי / אי-התאמה לגידול)
   activeIngredient String?
+  /// הצמח שהמודל זיהה לא תאם לגידול של החלקה
+  cropMismatch     Boolean  @default(false)
   createdAt        DateTime @default(now())
 
   fieldId String

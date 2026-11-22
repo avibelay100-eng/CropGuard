@@ -26,13 +26,16 @@ export function signToken(
   return { token, expiresAt };
 }
 
-/** מחזיר את מזהה המשתמש, או null אם הטוקן לא תקין או פג תוקף */
-export function verifyToken(token: string, secret: string): string | null {
+/**
+ * מחזיר את מזהה המשתמש ואת זמן ההנפקה (שניות), או null אם הטוקן לא תקין או פג תוקף.
+ * זמן ההנפקה משמש לדחיית טוקנים ישנים אחרי שינוי סיסמה.
+ */
+export function verifyToken(token: string, secret: string): { sub: string; issuedAt: number } | null {
   try {
     // algorithms מפורש מונע התקפת "alg: none" והחלפת אלגוריתם
     const decoded = jwt.verify(token, secret, { algorithms: ["HS256"] });
-    if (typeof decoded === "string" || typeof decoded.sub !== "string") return null;
-    return decoded.sub;
+    if (typeof decoded === "string" || typeof decoded.sub !== "string" || typeof decoded.iat !== "number") return null;
+    return { sub: decoded.sub, issuedAt: decoded.iat };
   } catch {
     return null;
   }

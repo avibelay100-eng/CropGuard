@@ -9,7 +9,9 @@
  *   POST /api/auth/register, POST /api/auth/login, GET /api/auth/me
  *   GET  /api/fields, POST /api/fields
  *   POST /api/diagnose
- *   GET  /api/diagnoses
+ *   GET  /api/diagnoses, DELETE /api/diagnoses/:id
+ *   GET  /api/news
+ *   GET  /api/library
  */
 
 import cors from "cors";
@@ -25,8 +27,12 @@ import { authRouter } from "./routes/auth.js";
 import { diagnoseRouter } from "./routes/diagnose.js";
 import { diagnosesRouter } from "./routes/diagnoses.js";
 import { fieldsRouter } from "./routes/fields.js";
+import { libraryRouter } from "./routes/library.js";
+import { newsRouter } from "./routes/news.js";
 import type { AiClient } from "./services/aiClient.js";
 import type { ImageStore } from "./services/imageStore.js";
+import type { NewsService } from "./services/news.js";
+import type { SmsSender } from "./services/sms.js";
 import "./types/express.js";
 
 export interface AppDeps {
@@ -34,6 +40,8 @@ export interface AppDeps {
   config: ServerConfig;
   aiClient: AiClient;
   imageStore: ImageStore;
+  newsService: NewsService;
+  smsSender: SmsSender;
 }
 
 export interface AppOptions {
@@ -82,6 +90,8 @@ export function createApp(deps: AppDeps, options: AppOptions = {}): Express {
   app.use("/api/fields", fieldsRouter(deps));
   app.use("/api/diagnose", diagnoseRouter(deps));
   app.use("/api/diagnoses", diagnosesRouter(deps));
+  app.use("/api/news", newsRouter(deps));
+  app.use("/api/library", libraryRouter(deps));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

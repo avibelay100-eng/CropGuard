@@ -11,6 +11,8 @@ const NAV_ITEMS = [
   { to: "/scan", label: "סריקה", icon: "M12 4v16M4 12h16" },
   { to: "/fields", label: "חלקות", icon: "M4 6h16M4 12h16M4 18h16" },
   { to: "/history", label: "היסטוריה", icon: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" },
+  { to: "/library", label: "ספרייה", icon: "M5 4h5a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5V4Zm14 0h-5a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h5V4Z" },
+  { to: "/news", label: "חדשות", icon: "M5 5h11v14H6a1 1 0 0 1-1-1V5Zm11 4h3v9a1 1 0 0 1-1 1h-2M8 9h5M8 12h5M8 15h3" },
 ] as const;
 
 function NavItems({ variant }: { variant: "top" | "bottom" }) {
@@ -56,9 +58,12 @@ export function Layout() {
           </div>
           <div className="flex items-center gap-3 text-sm">
             {user && (
-              <span className="hidden text-soil sm:inline">
-                {user.name} ({ROLE_LABELS_HE[user.role]})
-              </span>
+              <NavLink to="/account" className="text-soil underline-offset-4 hover:text-ink hover:underline">
+                <span className="hidden sm:inline">
+                  {user.name} ({ROLE_LABELS_HE[user.role]})
+                </span>
+                <span className="sm:hidden">החשבון שלי</span>
+              </NavLink>
             )}
             <button type="button" onClick={logout} className="cursor-pointer text-soil underline underline-offset-4 hover:text-ink">
               התנתקות

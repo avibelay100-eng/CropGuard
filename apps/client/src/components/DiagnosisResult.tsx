@@ -6,12 +6,15 @@
 
 import type { DiagnoseResponse, TreatmentOption } from "@cropguard/shared-types";
 
-import { formatPriceRange } from "../lib/format";
+import { formatPercent, formatPriceRange } from "../lib/format";
 import { ConfidenceMeter } from "./ConfidenceMeter";
 
 export function DiagnosisResult({ result }: { result: DiagnoseResponse }) {
   const tone = result.isHealthy ? "healthy" : "infected";
   const band = result.isHealthy ? "bg-leaf" : "bg-blight";
+  // אי-התאמה לגידול היא האזהרה הראשונה מהשרת; מציגים אותה בראש הכרטיס, ואת השאר במקומן
+  const mismatch = !result.cropCheck.matches;
+  const [cropWarning, ...otherWarnings] = mismatch ? result.warningsHe : [null, ...result.warningsHe];
 
   return (
     <article aria-labelledby="result-title" className="overflow-hidden border-2 border-ink bg-white">
@@ -29,6 +32,8 @@ export function DiagnosisResult({ result }: { result: DiagnoseResponse }) {
       </div>
 
       <div className="flex flex-col gap-6 p-5 sm:p-7">
+        {mismatch && cropWarning && <CropMismatch result={result} message={cropWarning} />}
+
         {/* שם המחלה */}
         <header>
           <p className="text-soil">{result.disease.plantHe}</p>
@@ -47,9 +52,9 @@ export function DiagnosisResult({ result }: { result: DiagnoseResponse }) {
 
         <ConfidenceMeter percent={result.confidencePercent} uncertain={result.uncertain} tone={tone} />
 
-        {result.warningsHe.length > 0 && (
+        {otherWarnings.length > 0 && (
           <ul className="flex flex-col gap-2" aria-label="אזהרות">
-            {result.warningsHe.map((warning) => (
+            {otherWarnings.map((warning) => (
               <li key={warning} className="border-s-4 border-straw bg-straw-soft px-4 py-2 text-straw-ink">
                 {warning}
               </li>
@@ -66,7 +71,7 @@ export function DiagnosisResult({ result }: { result: DiagnoseResponse }) {
 
         {result.treatments.length > 0 && <Treatments treatments={result.treatments} />}
 
-        {!result.isHealthy && !result.chemicalControl && (
+        {!result.isHealthy && !result.chemicalControl && !mismatch && (
           <p className="border-t border-line pt-5 text-soil">אין טיפול כימי שמרפא את המחלה הזו, ולכן לא מוצגים תכשירים.</p>
         )}
 
@@ -76,7 +81,43 @@ export function DiagnosisResult({ result }: { result: DiagnoseResponse }) {
   );
 }
 
-function Treatments({ treatments }: { treatments: TreatmentOption[] }) {
+/**
+ * אזהרת אי-התאמה בראש הכרטיס: החלקה היא גידול אחד והמודל זיהה צמח אחר.
+ * מראים כמה מההסתברות של המודל נופלת על הגידול של החלקה, ואת האפשרויות הסבירות בתוכו.
+ */
+function CropMismatch({ result, message }: { result: DiagnoseResponse; message: string }) {
+  const check = result.cropCheck;
+  return (
+    <section aria-labelledby="crop-mismatch-title" role="alert" className="border-2 border-straw bg-straw-soft p-4 text-straw-ink">
+      <h3 id="crop-mismatch-title" className="text-lg font-bold">
+        ⚠ התמונה לא נראית כמו {check.fieldCropHe}
+      </h3>
+      <p className="mt-1">{message}</p>
+      {check.supported && (
+        <>
+          <p className="mt-3 text-sm">
+            רק <bdi dir="ltr">{formatPercent(check.fieldCropSharePercent)}</bdi> מהסבירות של המודל שייכים ל{check.fieldCropHe}.
+          </p>
+          {check.inFieldCrop.length > 0 && (
+            <div className="mt-2">
+              <p className="text-sm font-semibold">האפשרויות הסבירות ביותר בתוך {check.fieldCropHe}:</p>
+              <ul className="mt-1 list-inside list-disc text-sm">
+                {check.inFieldCrop.map((option) => (
+                  <li key={option.disease.modelLabel}>
+                    {option.disease.displayNameHe} (<bdi dir="ltr">{formatPercent(option.confidencePercent)}</bdi>)
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+/** רשימת חומרים פעילים ומוצרים עם פסי מחיר - משותפת לכרטיס התוצאה ולספריית המחלות */
+export function Treatments({ treatments }: { treatments: TreatmentOption[] }) {
   // סקאלה משותפת לכל המוצרים, כדי שאפשר יהיה להשוות טווחי מחירים במבט אחד
   const scaleMax = Math.max(...treatments.flatMap((t) => t.products.map((p) => p.maxPriceILS)), 1);
 

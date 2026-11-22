@@ -17,6 +17,8 @@ interface AuthState {
   login: (input: LoginRequest) => Promise<void>;
   register: (input: RegisterRequest) => Promise<void>;
   logout: () => void;
+  /** עדכון פרטי המשתמש אחרי שינוי בשרת (למשל טלפון) */
+  setCurrentUser: (user: UserDto) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -67,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login: async (input) => accept(await api.login(input)),
       register: async (input) => accept(await api.register(input)),
       logout,
+      setCurrentUser: setUser,
     }),
     [user, loading, accept, logout],
   );

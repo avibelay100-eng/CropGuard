@@ -186,6 +186,42 @@ sequenceDiagram
 - **שגיאת AI מסוג 4xx** (תמונה פגומה) עוברת ללקוח כ-400. **שגיאת 5xx, timeout או תשובה לא תקינה** הופכות ל-503,
   בלי פרטים פנימיים ללקוח (לא כתובות ולא `ECONNREFUSED`).
 
+### 4.3א בדיקת התאמה לגידול
+
+המודל הוא מסווג סגור (38 מצבים) ותמיד בוחר אחד מהם, גם כשבתמונה צמח שהוא לא מכיר. לכן:
+
+```mermaid
+flowchart LR
+    A["AI: all 38 probabilities<br/>(top_k=38)"] --> B{"top plant ==<br/>field crop?"}
+    B -- yes --> C["normal result<br/>+ treatments + prices"]
+    B -- no --> D["Hebrew warning<br/>options inside field crop<br/>uncertain=true<br/>NO spray advice<br/>cropMismatch saved"]
+```
+
+`apps/server/src/services/cropCheck.ts` מחשב כמה מההסתברות נופלת על הגידול של החלקה ומהן האפשרויות הסבירות בתוכו.
+דוגמה אמיתית: תמונת כרוב בשדה תירס - המודל אמר "עגבנייה" ב-60%, ורק 0.3% מההסתברות היו על תירס.
+
+### 4.3ב שחזור סיסמה ב-SMS
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant S as Server
+    participant DB as PostgreSQL
+    participant SMS as SmsSender (console / Twilio)
+
+    U->>S: POST /api/auth/password-reset/request {phone}
+    S->>S: normalize to +9725XXXXXXXX
+    S->>DB: user by phone (if none: same 200, nothing sent)
+    S->>DB: invalidate old codes; store HMAC(code), expires in 10 min
+    S->>SMS: "קוד האיפוס שלך הוא 123456"
+    S-->>U: 200 {ok: true}  (always the same)
+    U->>S: POST /api/auth/password-reset/confirm {phone, code, newPassword}
+    S->>DB: latest unused, unexpired code
+    S->>S: timingSafeEqual(HMAC); wrong -> attempts++ (5 = locked)
+    S->>DB: new bcrypt hash + passwordChangedAt; mark code used
+    S-->>U: 200 - old JWTs are now rejected
+```
+
 ### 4.4 היסטוריה
 
 ```mermaid
@@ -301,6 +337,11 @@ erDiagram
 |---|---|---|
 | גניבת סיסמאות מהמסד | bcrypt עם 12 סבבים (עלות כוונונית), והסיסמה עצמה לא נשמרת | `auth/password.ts` |
 | ניחוש סיסמאות | rate limit: 20 ניסיונות ל-15 דקות לכל IP על `/api/auth` | `app.ts` |
+| ניחוש קוד שחזור | 6 ספרות, 10 דקות, חד-פעמי, עד 5 ניסיונות; נשמר כ-HMAC; השוואה בזמן קבוע | `routes/auth.ts` |
+| גילוי טלפונים רשומים | תשובה זהה לבקשת קוד גם למספר לא רשום | `routes/auth.ts` |
+| סשן גנוב אחרי שחזור סיסמה | `passwordChangedAt` - טוקנים שהונפקו לפני כן נדחים | `auth/middleware.ts` |
+| SSRF דרך החדשות | רשימת מקורות קבועה בקוד, בלי כתובת מהמשתמש; קישורי http/https בלבד | `services/news.ts` |
+| המלצת ריסוס לגידול הלא נכון | בדיקת התאמה לגידול של החלקה; באי-התאמה לא מוצגים תכשירים | `services/cropCheck.ts` |
 | גילוי אימיילים רשומים | אותה הודעה ואותו זמן תגובה לאימייל לא קיים | `routes/auth.ts` |
 | זיוף טוקן / `alg: none` | HS256 מפורש ב-verify, וסוד של 32 תווים לפחות (השרת לא עולה בלי) | `auth/jwt.ts`, `config.ts` |
 | טוקן של משתמש שנמחק או שתפקידו שונה | המשתמש נטען מהמסד בכל בקשה | `auth/middleware.ts` |

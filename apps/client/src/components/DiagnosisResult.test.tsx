@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { healthyResult, lateBlightResult } from "../test/utils";
+import { healthyResult, lateBlightResult, mismatchResult } from "../test/utils";
 import { DiagnosisResult } from "./DiagnosisResult";
 
 describe("DiagnosisResult", () => {
@@ -58,6 +58,20 @@ describe("DiagnosisResult", () => {
       />,
     );
     expect(screen.getByText(/אין טיפול כימי שמרפא את המחלה הזו/)).toBeInTheDocument();
+  });
+
+  it("puts a crop-mismatch warning at the top, with options inside the field's crop and no products", () => {
+    render(<DiagnosisResult result={mismatchResult} />);
+
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("התמונה לא נראית כמו תירס");
+    expect(alert).toHaveTextContent("החלקה מוגדרת כתירס, אבל המודל זיהה עגבנייה");
+    expect(alert).toHaveTextContent("3.4%");
+    expect(alert).toHaveTextContent("תירס – כתמת עלים צפונית");
+    // האזהרה לא מופיעה פעמיים
+    expect(screen.queryByRole("list", { name: "אזהרות" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "חומרים פעילים ומחירים" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/אין טיפול כימי שמרפא/)).not.toBeInTheDocument();
   });
 
   it("warns when the model is uncertain", () => {

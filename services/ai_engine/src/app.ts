@@ -229,15 +229,37 @@ export async function buildApp(
         tags: ["inference"],
         summary: "Classify a leaf image",
         consumes: ["multipart/form-data"],
+        querystring: {
+          type: "object",
+          properties: {
+            top_k: {
+              type: "integer",
+              minimum: 1,
+              maximum: 38,
+              description: "How many top predictions to return (default 3; 38 = full distribution)",
+            },
+          },
+        },
         body: predictRequestBodySchema,
         response: { 200: predictionResponseSchema, ...PREDICT_ERROR_RESPONSES },
       },
-      // הסכמה של body משמשת רק לתיעוד; את הקובץ עצמו קוראים ובודקים ידנית למטה
+      // הסכמות משמשות רק לתיעוד; את הקובץ ואת top_k בודקים ידנית למטה
       validatorCompiler: () => () => true,
     },
     async (request): Promise<PredictionResponse> => {
       if (!predictor) {
         throw new HttpError(503, `Model is not available: ${loadError ?? "model not loaded"}`);
+      }
+
+      // top_k: כמה תחזיות להחזיר. שרת הליבה מבקש את כל 38 כדי לבדוק התאמה לגידול של החלקה.
+      const rawTopK = (request.query as Record<string, unknown> | undefined)?.["top_k"];
+      let topK = settings.topK;
+      if (rawTopK !== undefined) {
+        const parsed = Number(rawTopK);
+        if (!Number.isInteger(parsed) || parsed < 1 || parsed > labels.length) {
+          throw new HttpError(422, `top_k must be an integer between 1 and ${labels.length}.`);
+        }
+        topK = parsed;
       }
 
       // 1. קריאת הקובץ מהבקשה
@@ -284,7 +306,7 @@ export async function buildApp(
       const inferenceMs = performance.now() - started;
 
       // 4. בניית התשובה
-      const ranked = topKIndices(scores, settings.topK);
+      const ranked = topKIndices(scores, topK);
       const bestIndex = ranked[0]!;
       const best = parseLabel(labels[bestIndex]!);
       const confidence = scores[bestIndex]!;

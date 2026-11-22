@@ -5,7 +5,7 @@
  */
 
 import type { DiagnosisHistoryItem, DiagnosisStatusFilter, FieldDto } from "@cropguard/shared-types";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import { api, errorMessageHe } from "../api/client";
@@ -30,6 +30,9 @@ export function HistoryPage() {
   const { user } = useAuth();
   // שם החקלאי רלוונטי רק למי שרואה אבחונים של כמה חקלאים
   const showFarmer = user?.role === "AGRONOMIST" || user?.role === "ADMIN";
+  // מוחקים רק נתונים של עצמנו; מנהל יכול למחוק הכול (כמו הכלל בשרת)
+  const canDelete = (item: DiagnosisHistoryItem) => user?.role === "ADMIN" || item.farmer.id === user?.id;
+  const [deletedMessage, setDeletedMessage] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
   const fieldId = params.get("fieldId") ?? "";
   const status = parseStatus(params.get("status"));
@@ -69,7 +72,15 @@ export function HistoryPage() {
     };
   }, [fieldId, status]);
 
+  const onDeleted = (id: string) => {
+    setPage((current) =>
+      current ? { ...current, items: current.items.filter((item) => item.id !== id), total: current.total - 1 } : current,
+    );
+    setDeletedMessage("האבחון נמחק.");
+  };
+
   const setFilter = (key: "fieldId" | "status", value: string) => {
+    setDeletedMessage(null);
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
     else next.delete(key);
@@ -137,6 +148,11 @@ export function HistoryPage() {
       </div>
 
       {error && <Notice>{error}</Notice>}
+      {deletedMessage && (
+        <div className="mb-4">
+          <Notice tone="info">{deletedMessage}</Notice>
+        </div>
+      )}
       {!items && !error && <Spinner label="טוען אבחונים…" />}
 
       {items && items.length === 0 && (
@@ -161,7 +177,13 @@ export function HistoryPage() {
           </p>
           <ol className="divide-y divide-line border-y border-line bg-white" aria-label="אבחונים">
             {items.map((item) => (
-              <HistoryRow key={item.id} item={item} showFarmer={showFarmer} />
+              <HistoryRow
+                key={item.id}
+                item={item}
+                showFarmer={showFarmer}
+                canDelete={canDelete(item)}
+                onDeleted={onDeleted}
+              />
             ))}
           </ol>
           {items.length < total && (
@@ -177,7 +199,46 @@ export function HistoryPage() {
   );
 }
 
-function HistoryRow({ item, showFarmer }: { item: DiagnosisHistoryItem; showFarmer: boolean }) {
+function HistoryRow({
+  item,
+  showFarmer,
+  canDelete,
+  onDeleted,
+}: {
+  item: DiagnosisHistoryItem;
+  showFarmer: boolean;
+  canDelete: boolean;
+  onDeleted: (id: string) => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const deleteButton = useRef<HTMLButtonElement>(null);
+  const cancelButton = useRef<HTMLButtonElement>(null);
+
+  // כשנפתח האישור - המיקוד עובר אליו; בביטול - חוזר לכפתור המחיקה
+  useEffect(() => {
+    if (confirming) cancelButton.current?.focus();
+  }, [confirming]);
+
+  const cancel = () => {
+    setConfirming(false);
+    setError(null);
+    requestAnimationFrame(() => deleteButton.current?.focus());
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    setError(null);
+    try {
+      await api.deleteDiagnosis(item.id);
+      onDeleted(item.id);
+    } catch (err) {
+      setError(errorMessageHe(err));
+      setDeleting(false);
+    }
+  };
+
   return (
     <li className="grid grid-cols-[auto_1fr_auto] items-start gap-x-4 px-4 py-4">
       {/* פס צבע בצד: ירוק לבריא, אדום לנגוע */}
@@ -191,6 +252,9 @@ function HistoryRow({ item, showFarmer }: { item: DiagnosisHistoryItem; showFarm
             {item.disease.scientificName}
           </p>
         )}
+        {item.cropMismatch && (
+          <p className="mt-1 inline-block bg-straw-soft px-2 text-sm text-straw-ink">⚠ לא תואם לגידול של החלקה</p>
+        )}
         <p className="mt-1 text-sm text-ink">
           {item.field.name}
           {showFarmer && <span className="ms-3 text-soil">של {item.farmer.name}</span>}
@@ -198,8 +262,38 @@ function HistoryRow({ item, showFarmer }: { item: DiagnosisHistoryItem; showFarm
         <time dateTime={item.createdAt} className="block text-sm text-soil">
           {formatDateTime(item.createdAt)}
         </time>
+
+        {confirming && (
+          <fieldset className="mt-3 flex flex-wrap items-center gap-3 border-0 border-s-4 border-blight bg-blight-soft px-3 py-2">
+            <legend className="float-start me-1 text-blight">למחוק את האבחון הזה? אי אפשר לבטל.</legend>
+            <Button variant="danger" onClick={confirmDelete} disabled={deleting} className="px-3 py-1.5">
+              {deleting ? "מוחק…" : "כן, למחוק"}
+            </Button>
+            <Button ref={cancelButton} variant="secondary" onClick={cancel} disabled={deleting} className="px-3 py-1.5">
+              ביטול
+            </Button>
+            {error && (
+              <p role="alert" className="w-full text-sm text-blight">
+                {error}
+              </p>
+            )}
+          </fieldset>
+        )}
       </div>
-      <p className="font-semibold tabular-nums">{formatPercent(item.confidence * 100)}</p>
+      <div className="flex flex-col items-end gap-2">
+        <p className="font-semibold tabular-nums">{formatPercent(item.confidence * 100)}</p>
+        {canDelete && !confirming && (
+          <Button
+            ref={deleteButton}
+            variant="quiet"
+            onClick={() => setConfirming(true)}
+            className="text-sm text-blight hover:text-blight"
+            aria-label={`מחיקת האבחון ${item.disease.displayNameHe} מתאריך ${formatDateTime(item.createdAt)}`}
+          >
+            מחיקה
+          </Button>
+        )}
+      </div>
     </li>
   );
 }

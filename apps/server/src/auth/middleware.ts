@@ -21,16 +21,21 @@ export function requireAuth(prisma: PrismaClient, jwtSecret: string): RequestHan
       throw unauthorized('Missing "Authorization: Bearer <token>" header.');
     }
 
-    const userId = verifyToken(token, jwtSecret);
-    if (!userId) throw unauthorized("Invalid or expired token.");
+    const verified = verifyToken(token, jwtSecret);
+    if (!verified) throw unauthorized("Invalid or expired token.");
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, email: true, name: true, role: true },
+      where: { id: verified.sub },
+      select: { id: true, email: true, name: true, role: true, passwordChangedAt: true },
     });
     if (!user) throw unauthorized("Invalid or expired token.");
 
-    request.user = user;
+    // טוקן שהונפק לפני שינוי הסיסמה האחרון נדחה - כך שחזור סיסמה מנתק סשנים גנובים
+    if (user.passwordChangedAt && verified.issuedAt < Math.floor(user.passwordChangedAt.getTime() / 1000)) {
+      throw unauthorized("Invalid or expired token.");
+    }
+
+    request.user = { id: user.id, email: user.email, name: user.name, role: user.role };
     next();
   };
 }

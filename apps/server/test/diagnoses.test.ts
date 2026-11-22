@@ -47,9 +47,9 @@ describe.skipIf(!hasTestDb)("GET /api/diagnoses", () => {
   async function scenario() {
     const farmerA = await createUser(context, "FARMER", "חקלאי א");
     const farmerB = await createUser(context, "FARMER", "חקלאי ב");
-    const fieldA1 = await createField(context, farmerA.token, { name: "A1" });
-    const fieldA2 = await createField(context, farmerA.token, { name: "A2" });
-    const fieldB1 = await createField(context, farmerB.token, { name: "B1" });
+    const fieldA1 = await createField(context, farmerA.token, { name: "A1", cropType: "Tomato" });
+    const fieldA2 = await createField(context, farmerA.token, { name: "A2", cropType: "Potato" });
+    const fieldB1 = await createField(context, farmerB.token, { name: "B1", cropType: "Corn" });
     const a1 = await diagnose(farmerA.token, fieldA1.id, "Tomato___Late_blight");
     const a2 = await diagnose(farmerA.token, fieldA1.id, "Tomato___Healthy");
     const a3 = await diagnose(farmerA.token, fieldA2.id, "Potato___Early_blight");
@@ -75,7 +75,8 @@ describe.skipIf(!hasTestDb)("GET /api/diagnoses", () => {
       nameEn: "Potato Early blight",
       scientificName: "Alternaria solani",
     });
-    expect(potato.field).toMatchObject({ name: "A2", cropType: "Tomato" });
+    expect(potato.field).toMatchObject({ name: "A2", cropType: "Potato" });
+    expect(potato.cropMismatch).toBe(false);
     expect(potato.farmer.name).toBe("חקלאי א");
     expect(potato.activeIngredient).toBe("chlorothalonil");
   });
@@ -140,6 +141,53 @@ describe.skipIf(!hasTestDb)("GET /api/diagnoses", () => {
     const farmer = await createUser(context);
     const response = await list(farmer.token, query);
     expect(response.status).toBe(422);
+  });
+
+  describe("DELETE /api/diagnoses/:id", () => {
+    const remove = (token: string, id: string) =>
+      request(context.app).delete(`/api/diagnoses/${id}`).set(...bearer(token));
+
+    it("lets the owner delete a diagnosis, its image, and updates the field count", async () => {
+      const { farmerA, fieldA1, ids } = await scenario();
+      const saved = await context.prisma.diagnosis.findUniqueOrThrow({ where: { id: ids.a1 } });
+      expect(context.images.images.has(saved.imageUrl)).toBe(true);
+
+      const response = await remove(farmerA.token, ids.a1);
+
+      expect(response.status).toBe(204);
+      expect(await context.prisma.diagnosis.findUnique({ where: { id: ids.a1 } })).toBeNull();
+      expect(context.images.images.has(saved.imageUrl)).toBe(false);
+      const fields = await request(context.app).get("/api/fields").set(...bearer(farmerA.token));
+      const field = fields.body.items.find((f: { id: string }) => f.id === fieldA1.id);
+      expect(field.diagnosisCount).toBe(1);
+    });
+
+    it("returns 404 to a farmer deleting someone else's diagnosis, and keeps it", async () => {
+      const { farmerB, ids } = await scenario();
+      expect((await remove(farmerB.token, ids.a1)).status).toBe(404);
+      expect(await context.prisma.diagnosis.findUnique({ where: { id: ids.a1 } })).not.toBeNull();
+    });
+
+    it("forbids an agronomist from deleting a farmer's diagnosis", async () => {
+      const { ids } = await scenario();
+      const agronomist = await createUser(context, "AGRONOMIST");
+      const response = await remove(agronomist.token, ids.a1);
+      expect(response.status).toBe(403);
+      expect(await context.prisma.diagnosis.findUnique({ where: { id: ids.a1 } })).not.toBeNull();
+    });
+
+    it("lets an admin delete any diagnosis", async () => {
+      const { ids } = await scenario();
+      const admin = await createUser(context, "ADMIN");
+      expect((await remove(admin.token, ids.b1)).status).toBe(204);
+      expect(await context.prisma.diagnosis.findUnique({ where: { id: ids.b1 } })).toBeNull();
+    });
+
+    it("returns 404 for a diagnosis that does not exist, and requires a token", async () => {
+      const farmer = await createUser(context);
+      expect((await remove(farmer.token, "no-such-diagnosis")).status).toBe(404);
+      expect((await request(context.app).delete("/api/diagnoses/whatever")).status).toBe(401);
+    });
   });
 
   it("returns an empty list for a farmer with no diagnoses", async () => {

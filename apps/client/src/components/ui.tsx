@@ -2,22 +2,24 @@
  * רכיבי ממשק בסיסיים: כפתור, שדה טופס, הודעה, ספינר.
  */
 
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import type { ComponentPropsWithRef, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 import { useId } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "quiet";
+type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
 
 const BUTTON_STYLES: Record<ButtonVariant, string> = {
   primary: "bg-leaf text-white hover:bg-leaf-dark disabled:bg-leaf/50",
   secondary: "border-[1.5px] border-leaf text-leaf bg-white hover:bg-leaf-soft disabled:opacity-50",
   quiet: "text-soil underline underline-offset-4 hover:text-ink disabled:opacity-50",
+  danger: "bg-blight text-white hover:brightness-90 disabled:opacity-50",
 };
 
 export function Button({
   variant = "primary",
   className = "",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
+  // ב-React 19 ref הוא prop רגיל, כך שהוא עובר ישר ל-<button> (נדרש להחזרת מיקוד)
+}: ComponentPropsWithRef<"button"> & { variant?: ButtonVariant }) {
   const base = variant === "quiet" ? "px-1 py-1" : "rounded-[var(--radius-label)] px-5 py-2.5 font-semibold";
   return (
     <button

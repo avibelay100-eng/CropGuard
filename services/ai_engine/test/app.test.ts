@@ -100,6 +100,22 @@ describe("with the real model", () => {
     expect(response.headers["x-request-id"]).toBeTruthy();
   });
 
+  it("returns the full 38-class distribution with top_k=38", async () => {
+    const upload = imageUpload(await gradientPng());
+    const response = await app.inject({ method: "POST", url: "/predict?top_k=38", ...upload });
+    expect(response.statusCode).toBe(200);
+    const scores = response.json().top_predictions as Array<{ confidence: number }>;
+    expect(scores).toHaveLength(38);
+    // הסכום קרוב ל-1 (עיגול ל-4 ספרות בכל ערך)
+    expect(scores.reduce((sum, p) => sum + p.confidence, 0)).toBeCloseTo(1, 2);
+  });
+
+  it.each(["0", "39", "abc"])("rejects top_k=%s with 422", async (value) => {
+    const upload = imageUpload(await gradientPng());
+    const response = await app.inject({ method: "POST", url: `/predict?top_k=${value}`, ...upload });
+    expect(response.statusCode).toBe(422);
+  });
+
   it("is deterministic for the same image", async () => {
     const image = await gradientPng();
     const first = (await predict(imageUpload(image))).json();

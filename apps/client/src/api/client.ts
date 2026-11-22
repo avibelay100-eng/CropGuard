@@ -13,8 +13,13 @@ import type {
   DiagnosisStatusFilter,
   FieldDto,
   FieldListResponse,
+  LibraryResponse,
   LoginRequest,
+  NewsLanguage,
+  NewsResponse,
+  PasswordResetConfirmRequest,
   RegisterRequest,
+  UpdateMeRequest,
   ServerErrorCode,
   UserDto,
 } from "@cropguard/shared-types";
@@ -29,7 +34,8 @@ const MESSAGES_HE: Record<ServerErrorCode | "network_error", string> = {
   unauthorized: "צריך להתחבר מחדש.",
   forbidden: "אין לכם הרשאה לפעולה הזו.",
   not_found: "הפריט לא נמצא.",
-  conflict: "כבר קיים חשבון עם האימייל הזה.",
+  conflict: "הפרטים האלה כבר רשומים בחשבון אחר.",
+  invalid_code: "הקוד שגוי או שפג תוקפו. אפשר לבקש קוד חדש.",
   payload_too_large: "התמונה גדולה מדי. אפשר לשלוח עד 10MB.",
   unsupported_media_type: "הקובץ שנבחר אינו תמונה.",
   too_many_requests: "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.",
@@ -121,6 +127,15 @@ export const api = {
 
   me: () => request<UserDto>("/auth/me"),
 
+  updateMe: (input: UpdateMeRequest) =>
+    request<UserDto>("/auth/me", { method: "PATCH", body: JSON.stringify(input) }),
+
+  requestPasswordReset: (phone: string) =>
+    request<{ ok: true }>("/auth/password-reset/request", { method: "POST", body: JSON.stringify({ phone }) }),
+
+  confirmPasswordReset: (input: PasswordResetConfirmRequest) =>
+    request<{ ok: true }>("/auth/password-reset/confirm", { method: "POST", body: JSON.stringify(input) }),
+
   listFields: () => request<FieldListResponse>("/fields"),
 
   createField: (input: CreateFieldRequest) =>
@@ -146,6 +161,13 @@ export const api = {
     const query = params.toString();
     return request<DiagnosisListResponse>(`/diagnoses${query ? `?${query}` : ""}`);
   },
+
+  /** מחיקת אבחון; השרת מחזיר 204 בלי גוף */
+  deleteDiagnosis: (id: string) => request<null>(`/diagnoses/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  listNews: (language?: NewsLanguage) => request<NewsResponse>(`/news${language ? `?lang=${language}` : ""}`),
+
+  getLibrary: () => request<LibraryResponse>("/library"),
 };
 
 /** הודעה בעברית לכל שגיאה (גם שגיאות שאינן ApiError) */

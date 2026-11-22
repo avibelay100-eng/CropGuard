@@ -24,7 +24,8 @@ import type { AppDeps } from "../app.js";
 import { HttpError, notFound, validationError } from "../errors.js";
 import { describeDisease } from "../i18n/diseases.js";
 import { AiServiceError } from "../services/aiClient.js";
-import { buildTreatmentPlan } from "../services/treatments.js";
+import { CROP_MISMATCH_GUIDANCE_HE, checkCrop, cropWarningHe } from "../services/cropCheck.js";
+import { buildTreatmentPlan, type TreatmentPlan } from "../services/treatments.js";
 
 const bodySchema = z.object({
   fieldId: z.string({ error: '"fieldId" is required.' }).trim().min(1, '"fieldId" is required.'),
@@ -63,7 +64,10 @@ export function diagnoseRouter({ prisma, config, aiClient, imageStore }: AppDeps
     const { fieldId } = bodySchema.parse(request.body ?? {});
 
     // 1. הרשאה לחלקה. חלקה של חקלאי אחר מחזירה 404 (ולא 403) כדי לא לחשוף שהיא קיימת.
-    const field = await prisma.field.findUnique({ where: { id: fieldId }, select: { id: true, ownerId: true } });
+    const field = await prisma.field.findUnique({
+      where: { id: fieldId },
+      select: { id: true, ownerId: true, cropType: true },
+    });
     if (!field || (!canSeeAllFarmers(user.role) && field.ownerId !== user.id)) {
       throw notFound("Field not found.");
     }
@@ -89,8 +93,15 @@ export function diagnoseRouter({ prisma, config, aiClient, imageStore }: AppDeps
       throw err;
     }
 
-    // 3-4. שמירת התמונה והמלצות הטיפול
-    const plan = await buildTreatmentPlan(prisma, prediction.model_label, prediction.is_healthy);
+    // 3. התאמה לגידול של החלקה. המודל תמיד בוחר אחד מ-38 מצבים, גם כשבתמונה צמח שהוא לא מכיר,
+    //    ולכן כשהצמח שזוהה לא תואם לחלקה - לא ממליצים על ריסוס, ומסמנים את האבחון כלא ודאי.
+    const cropCheck = checkCrop(field.cropType, prediction.model_label, prediction.top_predictions);
+    const cropMismatch = !cropCheck.matches;
+
+    // 4. שמירת התמונה והמלצות הטיפול
+    const plan: TreatmentPlan = cropMismatch
+      ? { guidanceHe: CROP_MISMATCH_GUIDANCE_HE, chemicalControl: false, treatments: [], hasUnverifiedPrices: false }
+      : await buildTreatmentPlan(prisma, prediction.model_label, prediction.is_healthy);
     const imageUrl = await imageStore.save(file.buffer, file.mimetype);
 
     // 5. שמירת האבחון. אם השמירה נכשלת - מוחקים את התמונה כדי לא להשאיר קבצים יתומים.
@@ -105,6 +116,7 @@ export function diagnoseRouter({ prisma, config, aiClient, imageStore }: AppDeps
           confidence: prediction.confidence,
           isHealthy: prediction.is_healthy,
           activeIngredient: plan.treatments[0]?.activeIngredient ?? null,
+          cropMismatch,
         },
       });
     } catch (err) {
@@ -114,6 +126,8 @@ export function diagnoseRouter({ prisma, config, aiClient, imageStore }: AppDeps
 
     // 6. התשובה
     const warningsHe: string[] = [];
+    const cropWarning = cropWarningHe(cropCheck);
+    if (cropWarning) warningsHe.push(cropWarning);
     if (prediction.uncertain) warningsHe.push(UNCERTAIN_WARNING_HE);
     if (plan.hasUnverifiedPrices) warningsHe.push(UNVERIFIED_PRICES_WARNING_HE);
 
@@ -130,16 +144,25 @@ export function diagnoseRouter({ prisma, config, aiClient, imageStore }: AppDeps
       statusHe: prediction.is_healthy ? "בריא" : "נגוע",
       confidence: prediction.confidence,
       confidencePercent: prediction.confidence_percent,
-      uncertain: prediction.uncertain,
+      // אי-התאמה לגידול = לא ודאי, גם אם המודל עצמו "בטוח"
+      uncertain: prediction.uncertain || cropMismatch,
       guidanceHe: plan.guidanceHe,
       chemicalControl: plan.chemicalControl,
       treatments: plan.treatments,
+      cropCheck,
       warningsHe,
       disclaimerHe: DISCLAIMER_HE,
     };
 
     request.log?.info(
-      { diagnosisId: diagnosis.id, fieldId: field.id, label: prediction.model_label, confidence: prediction.confidence },
+      {
+        diagnosisId: diagnosis.id,
+        fieldId: field.id,
+        label: prediction.model_label,
+        confidence: prediction.confidence,
+        fieldCrop: field.cropType,
+        cropMismatch,
+      },
       "Diagnosis saved",
     );
     response.status(201).json(body);

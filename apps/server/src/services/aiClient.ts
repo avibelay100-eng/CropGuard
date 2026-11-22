@@ -62,7 +62,8 @@ export function createHttpAiClient(baseUrl: string, timeoutMs: number): AiClient
 
       let response: Response;
       try {
-        response = await fetch(`${baseUrl}/predict`, {
+        // top_k=38: כל ההתפלגות, כדי לבדוק כמה מההסתברות נופלת על הגידול של החלקה
+        response = await fetch(`${baseUrl}/predict?top_k=38`, {
           method: "POST",
           body: form,
           signal: AbortSignal.timeout(timeoutMs),

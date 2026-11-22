@@ -111,6 +111,17 @@ export const DISEASES: Readonly<Record<string, DiseaseEntry>> = {
   "Tomato___Healthy": { plantHe: "עגבנייה", nameHe: HEALTHY, scientificName: null },
 };
 
+/** שם הצמח מתוך תווית: "Pepper,_bell___Bacterial_spot" -> "Pepper, bell" (כמו cropType של חלקה) */
+export function plantOfLabel(modelLabel: string): string {
+  return (modelLabel.split("___")[0] ?? modelLabel).replaceAll("_", " ");
+}
+
+/** שם הצמח בעברית לפי השם באנגלית ("Corn" -> "תירס"); לצמח לא מוכר - השם כמו שהוא */
+export function plantHe(plant: string): string {
+  const entry = Object.entries(DISEASES).find(([label]) => plantOfLabel(label) === plant);
+  return entry ? entry[1].plantHe : plant;
+}
+
 /**
  * בונה את פרטי המחלה בעברית ובאנגלית.
  * nameEn מגיע משירות ה-AI (או מהמסד); לתווית לא מוכרת מוחזר השם האנגלי גם בעברית.

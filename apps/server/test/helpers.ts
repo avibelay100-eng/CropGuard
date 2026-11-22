@@ -13,6 +13,8 @@ import { createPrismaClient } from "../src/db.js";
 import type { PrismaClient, Role } from "../src/generated/prisma/client.js";
 import { AiServiceError, type AiClient, type UploadedImage } from "../src/services/aiClient.js";
 import type { ImageStore } from "../src/services/imageStore.js";
+import type { NewsService } from "../src/services/news.js";
+import type { SmsSender } from "../src/services/sms.js";
 
 export const TEST_DATABASE_URL = process.env["TEST_DATABASE_URL"];
 /** בלי מסד בדיקות - בדיקות האינטגרציה מדולגות */
@@ -33,12 +35,42 @@ export function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig 
     corsOrigins: ["http://localhost:5173"],
     authRateLimit: 0,
     logLevel: "silent",
+    resetCodeTtlMinutes: 10,
+    sms: { provider: "console" },
     ...overrides,
   };
 }
 
-/** תשובת AI עקבית לתווית נתונה, כמו שהשירות האמיתי היה מחזיר */
-export function prediction(modelLabel: string, confidence = 0.93): PredictionResponse {
+/** SMS מדומה: שומר את ההודעות, כדי שהבדיקה תוכל "לקרוא" את הקוד */
+export class FakeSmsSender implements SmsSender {
+  readonly sent: Array<{ to: string; text: string }> = [];
+  failNext = false;
+
+  async send(to: string, text: string): Promise<void> {
+    if (this.failNext) {
+      this.failNext = false;
+      throw new Error("SMS provider down");
+    }
+    this.sent.push({ to, text });
+  }
+
+  /** הקוד בן 6 הספרות מההודעה האחרונה */
+  lastCode(): string {
+    const match = this.sent.at(-1)?.text.match(/\b(\d{6})\b/);
+    if (!match) throw new Error("No SMS code was sent");
+    return match[1]!;
+  }
+}
+
+/**
+ * תשובת AI עקבית לתווית נתונה, כמו שהשירות האמיתי היה מחזיר.
+ * others - תחזיות נוספות (תווית והסתברות), כמו בהתפלגות המלאה ש-top_k=38 מחזיר.
+ */
+export function prediction(
+  modelLabel: string,
+  confidence = 0.93,
+  others: ReadonlyArray<[string, number]> = [],
+): PredictionResponse {
   const [plant = modelLabel, condition = ""] = modelLabel.split("___");
   const disease = `${plant.replaceAll("_", " ")} ${condition.replaceAll("_", " ")}`.trim();
   const isHealthy = condition.toLowerCase() === "healthy";
@@ -51,7 +83,10 @@ export function prediction(modelLabel: string, confidence = 0.93): PredictionRes
     confidence,
     confidence_percent: Math.round(confidence * 10000) / 100,
     uncertain: confidence < 0.5,
-    top_predictions: [{ model_label: modelLabel, disease, confidence }],
+    top_predictions: [
+      { model_label: modelLabel, disease, confidence },
+      ...others.map(([label, score]) => ({ model_label: label, disease: label.replaceAll("_", " "), confidence: score })),
+    ],
   };
 }
 
@@ -83,24 +118,61 @@ export class MemoryImageStore implements ImageStore {
   }
 }
 
+/** שירות חדשות מדומה: מחזיר רשימה קבועה, בלי לפנות לאינטרנט */
+export const fakeNews: NewsService = {
+  async get() {
+    return {
+      items: [
+        {
+          id: "n1",
+          title: "מחקר ישראלי על אשלגן בקרקע",
+          summary: "תקציר",
+          link: "https://www.hayadan.org.il/a",
+          publishedAt: "2026-11-15T06:00:00.000Z",
+          sourceId: "hayadan",
+          sourceName: "הידען",
+          language: "he",
+        },
+        {
+          id: "n2",
+          title: "New blight-resistant potato",
+          summary: "Summary",
+          link: "https://phys.org/b",
+          publishedAt: "2026-11-14T06:00:00.000Z",
+          sourceId: "physorg",
+          sourceName: "Phys.org",
+          language: "en",
+        },
+      ],
+      sources: [],
+      fetchedAt: "2026-11-22T00:00:00.000Z",
+    };
+  },
+};
+
 export interface TestContext {
   app: Express;
   prisma: PrismaClient;
   ai: FakeAiClient;
   images: MemoryImageStore;
+  sms: FakeSmsSender;
 }
 
 export function createTestContext(configOverrides: Partial<ServerConfig> = {}): TestContext {
   const prisma = createPrismaClient(TEST_DATABASE_URL);
   const ai = new FakeAiClient();
   const images = new MemoryImageStore();
-  const app = createApp({ prisma, config: testConfig(configOverrides), aiClient: ai, imageStore: images }, { logger: false });
-  return { app, prisma, ai, images };
+  const sms = new FakeSmsSender();
+  const app = createApp(
+    { prisma, config: testConfig(configOverrides), aiClient: ai, imageStore: images, newsService: fakeNews, smsSender: sms },
+    { logger: false },
+  );
+  return { app, prisma, ai, images, sms };
 }
 
-/** מוחק את כל המשתמשים, החלקות והאבחונים (נתוני הבסיס - מחירים והמלצות - נשארים) */
+/** מוחק את כל המשתמשים, החלקות, האבחונים וקודי השחזור (נתוני הבסיס - מחירים והמלצות - נשארים) */
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "diagnoses", "fields", "users" CASCADE');
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "password_reset_codes", "diagnoses", "fields", "users" CASCADE');
 }
 
 let userCounter = 0;

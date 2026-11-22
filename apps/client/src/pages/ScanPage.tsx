@@ -11,7 +11,7 @@ import { api, errorMessageHe } from "../api/client";
 import { DiagnosisResult } from "../components/DiagnosisResult";
 import { ImagePicker } from "../components/ImagePicker";
 import { Button, Notice, PageHeader, SelectField, Spinner } from "../components/ui";
-import { cropLabelHe } from "../lib/crops";
+import { CROPS, cropLabelHe } from "../lib/crops";
 
 export function ScanPage() {
   const [fields, setFields] = useState<FieldDto[] | null>(null);
@@ -97,6 +97,12 @@ export function ScanPage() {
           </SelectField>
 
           <ImagePicker file={image} onChange={setImage} disabled={submitting} />
+
+          {/* המודל מכיר רק את הגידולים האלה; צמח אחר (למשל כרוב) יקבל תוצאה שגויה */}
+          <p className="text-sm text-soil">
+            המודל מזהה 14 גידולים: {CROPS.map((crop) => crop.labelHe).join(", ")}. בצמחים אחרים, כמו כרוב או חסה, התוצאה לא תהיה
+            נכונה.
+          </p>
 
           {error && <Notice>{error}</Notice>}
 

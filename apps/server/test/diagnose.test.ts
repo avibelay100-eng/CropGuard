@@ -137,8 +137,71 @@ describe.skipIf(!hasTestDb)("POST /api/diagnose", () => {
     expect(response.body.disease.scientificName).toBe("Tomato yellow leaf curl virus");
   });
 
+  describe("crop check against the field's crop", () => {
+    it("matches when the model sees the field's crop", async () => {
+      const response = await diagnose(farmerToken);
+      expect(response.body.cropCheck).toMatchObject({
+        fieldCrop: "Tomato",
+        fieldCropHe: "עגבנייה",
+        predictedPlant: "Tomato",
+        supported: true,
+        matches: true,
+        fieldCropSharePercent: 90,
+      });
+      expect(response.body.treatments.length).toBeGreaterThan(0);
+      const saved = await context.prisma.diagnosis.findFirstOrThrow();
+      expect(saved.cropMismatch).toBe(false);
+    });
+
+    it("warns, hides spray advice and saves the mismatch when the model sees another plant", async () => {
+      const corn = await createField(context, farmerToken, { name: "שדה תירס", cropType: "Corn" });
+      // תמונה של צמח אחר: המודל בטוח שזו עגבנייה, ורק מעט הסתברות נופלת על תירס
+      context.ai.next = prediction("Tomato___Early_blight", 0.9, [
+        ["Corn___Northern_Leaf_Blight", 0.024],
+        ["Corn___Common_rust", 0.01],
+      ]);
+
+      const response = await diagnose(farmerToken, corn.id);
+
+      expect(response.status).toBe(201);
+      const body = response.body;
+      expect(body.cropCheck).toMatchObject({
+        fieldCrop: "Corn",
+        fieldCropHe: "תירס",
+        predictedPlant: "Tomato",
+        predictedPlantHe: "עגבנייה",
+        supported: true,
+        matches: false,
+        fieldCropSharePercent: 3.4,
+      });
+      expect(body.cropCheck.inFieldCrop.map((o: { disease: { displayNameHe: string } }) => o.disease.displayNameHe)).toEqual([
+        "תירס – כתמת עלים צפונית",
+        "תירס – חלדון מצוי",
+      ]);
+      // לא ממליצים על ריסוס לעגבנייה בשדה תירס
+      expect(body.treatments).toEqual([]);
+      expect(body.chemicalControl).toBe(false);
+      expect(body.uncertain).toBe(true);
+      expect(body.warningsHe[0]).toContain("החלקה מוגדרת כתירס, אבל המודל זיהה עגבנייה");
+
+      const saved = await context.prisma.diagnosis.findUniqueOrThrow({ where: { id: body.diagnosis.id } });
+      expect(saved).toMatchObject({ cropMismatch: true, activeIngredient: null });
+    });
+
+    it("warns when the field's crop is not one the model knows", async () => {
+      const cabbage = await createField(context, farmerToken, { name: "כרוב", cropType: "Cabbage" });
+      context.ai.next = prediction("Tomato___Early_blight", 0.6);
+
+      const response = await diagnose(farmerToken, cabbage.id);
+
+      expect(response.body.cropCheck).toMatchObject({ supported: false, matches: false, fieldCropSharePercent: 0 });
+      expect(response.body.warningsHe[0]).toContain("אינו אחד מהגידולים שהמודל מכיר");
+      expect(response.body.treatments).toEqual([]);
+    });
+  });
+
   it("warns in Hebrew when the AI is uncertain", async () => {
-    context.ai.next = prediction("Potato___Early_blight", 0.42);
+    context.ai.next = prediction("Tomato___Early_blight", 0.42);
     const response = await diagnose(farmerToken);
 
     expect(response.status).toBe(201);

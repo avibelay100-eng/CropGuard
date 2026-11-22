@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -98,6 +98,87 @@ describe("history page", () => {
 
     expect(await screen.findByText("מוצגים 21 מתוך 21")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "טעינת אבחונים נוספים" })).not.toBeInTheDocument();
+  });
+
+  describe("deleting a diagnosis", () => {
+    it("asks for confirmation, deletes, and removes the row", async () => {
+      const user = userEvent.setup();
+      const { calls } = renderApp("/history", {
+        user: farmer,
+        routes: [
+          fields,
+          { path: "/diagnoses?limit=20&offset=0", body: historyPage([historyItem(), historyItem({ id: "d-2" })]) },
+          { method: "DELETE", path: "/diagnoses/d-1", status: 204 },
+        ],
+      });
+
+      const list = await screen.findByRole("list", { name: "אבחונים" });
+      const [firstRow] = within(list).getAllByRole("listitem");
+      await user.click(within(firstRow!).getByRole("button", { name: /מחיקת האבחון/ }));
+
+      // אישור: לא נמחק עדיין, והמיקוד עבר לכפתור הביטול
+      expect(within(firstRow!).getByRole("group", { name: /למחוק את האבחון הזה/ })).toBeInTheDocument();
+      expect(within(firstRow!).getByRole("button", { name: "ביטול" })).toHaveFocus();
+      expect(calls.some((c) => c.method === "DELETE")).toBe(false);
+
+      await user.click(within(firstRow!).getByRole("button", { name: "כן, למחוק" }));
+
+      expect(await screen.findByText("האבחון נמחק.")).toBeInTheDocument();
+      expect(within(list).getAllByRole("listitem")).toHaveLength(1);
+      expect(screen.getByText("מוצגים 1 מתוך 1")).toBeInTheDocument();
+      expect(calls.filter((c) => c.method === "DELETE").map((c) => c.path)).toEqual(["/diagnoses/d-1"]);
+    });
+
+    it("cancels without deleting and returns focus to the delete button", async () => {
+      const user = userEvent.setup();
+      const { calls } = renderApp("/history", {
+        user: farmer,
+        routes: [fields, { path: "/diagnoses?limit=20&offset=0", body: historyPage([historyItem()]) }],
+      });
+
+      const deleteButton = await screen.findByRole("button", { name: /מחיקת האבחון/ });
+      await user.click(deleteButton);
+      await user.click(screen.getByRole("button", { name: "ביטול" }));
+
+      expect(screen.queryByRole("group", { name: /למחוק/ })).not.toBeInTheDocument();
+      await waitFor(() => expect(screen.getByRole("button", { name: /מחיקת האבחון/ })).toHaveFocus());
+      expect(calls.some((c) => c.method === "DELETE")).toBe(false);
+    });
+
+    it("shows a Hebrew error and keeps the row when deletion fails", async () => {
+      const user = userEvent.setup();
+      renderApp("/history", {
+        user: farmer,
+        routes: [
+          fields,
+          { path: "/diagnoses?limit=20&offset=0", body: historyPage([historyItem()]) },
+          { method: "DELETE", path: "/diagnoses/d-1", status: 500, body: { error: "internal_error", detail: "x" } },
+        ],
+      });
+
+      await user.click(await screen.findByRole("button", { name: /מחיקת האבחון/ }));
+      await user.click(screen.getByRole("button", { name: "כן, למחוק" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("אירעה שגיאה בשרת");
+      expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    });
+
+    it("does not offer deletion of another farmer's diagnosis to an agronomist", async () => {
+      renderApp("/history", {
+        user: agronomist,
+        routes: [fields, { path: "/diagnoses?limit=20&offset=0", body: historyPage([historyItem()]) }],
+      });
+      await screen.findByRole("list", { name: "אבחונים" });
+      expect(screen.queryByRole("button", { name: /מחיקת האבחון/ })).not.toBeInTheDocument();
+    });
+
+    it("lets an admin delete anyone's diagnosis", async () => {
+      renderApp("/history", {
+        user: { ...agronomist, id: "u-admin", role: "ADMIN" },
+        routes: [fields, { path: "/diagnoses?limit=20&offset=0", body: historyPage([historyItem()]) }],
+      });
+      expect(await screen.findByRole("button", { name: /מחיקת האבחון/ })).toBeInTheDocument();
+    });
   });
 
   it("invites a first scan when there is no history", async () => {
