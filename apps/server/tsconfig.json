@@ -13,5 +13,5 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["src", "prisma", "test", "prisma.config.ts"]
+  "include": ["src", "prisma", "scripts", "test", "prisma.config.ts"]
 }

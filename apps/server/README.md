@@ -15,6 +15,7 @@
 | `prisma/data/productPrices.ts` | מילון המחירים: מוצר מסחרי וטווח מחירים בשקלים לכל חומר פעיל |
 | `prisma.config.ts` | הגדרות Prisma 7 (כתובת מסד הנתונים, פקודת ה-seed) |
 | `src/db.ts` | יצירת חיבור למסד (`createPrismaClient`) |
+| `scripts/show-db.ts` | הצגת תוכן הטבלאות בטרמינל (`npm run db:show`) |
 | `src/generated/prisma/` | הקליינט ש-Prisma מייצר (לא נכנס ל-git, נוצר ב-`npm install`) |
 | `test/seedData.test.ts` | בדיקות עקביות של נתוני ה-seed |
 
@@ -46,7 +47,20 @@
    npm run db:seed
    ```
 
-4. **צפייה בנתונים:** `npm run db:studio` פותח ממשק גרפי בדפדפן.
+4. **צפייה בנתונים:** `npm run db:show` מדפיס בטרמינל את מספר השורות, את מילון המחירים
+   ואת ההמלצות.
+
+### מסד נתונים מקומי עם `prisma dev`
+
+```powershell
+npx prisma dev --detach --name cropguard   # הפעלה ברקע; מדפיס את הכתובת ל-.env
+npx prisma dev ls                          # מצב השרת והכתובות שלו
+npx prisma dev stop cropguard              # עצירה (הנתונים נשמרים)
+npx prisma dev start cropguard             # הפעלה מחדש
+```
+
+> **הערה:** Prisma Studio (`npm run db:studio`) לא מצליח לקרוא את המסד המקומי של `prisma dev`
+> בגרסה הזו (שגיאת PostgreSQL `26000`). עם PostgreSQL רגיל הוא עובד; עם `prisma dev` משתמשים ב-`npm run db:show`.
 
 ## פקודות
 
@@ -55,7 +69,8 @@
 | `npm run prisma:generate` | בונה מחדש את הקליינט אחרי שינוי בסכמה |
 | `npm run db:migrate` | יוצר מיגרציה מהשינויים בסכמה ומחיל אותה |
 | `npm run db:seed` | טוען מחירים והמלצות (אפשר להריץ שוב בבטחה) |
-| `npm run db:studio` | ממשק גרפי לנתונים |
+| `npm run db:show` | הצגת תוכן הטבלאות בטרמינל (קריאה בלבד) |
+| `npm run db:studio` | ממשק גרפי לנתונים (עם PostgreSQL רגיל) |
 | `npm test` | בדיקות נתוני ה-seed (לא צריך מסד נתונים) |
 | `npm run typecheck` | בדיקת טיפוסים |
 
