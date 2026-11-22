@@ -4,12 +4,14 @@
  * requireAuth: בודק את ה-JWT בכותרת Authorization וטוען את המשתמש מהמסד.
  *   הטעינה מהמסד בכל בקשה מבטיחה שמשתמש שנמחק או שתפקידו שונה מאבד גישה מיד,
  *   ולא רק כשהטוקן שלו פג.
- * requireRole: מאפשר גישה רק לתפקידים שצוינו.
+ * canSeeAllFarmers: האם התפקיד רואה נתונים של כל החקלאים.
+ *   ההרשאות עצמן נבדקות בכל נתיב (וב-fieldAccess.ts לחלקה אחת), כי הן תלויות גם בבעלות על הנתונים
+ *   ולא רק בתפקיד - למשל אגרונום רואה כל חלקה אבל לא עורך חלקה של חקלאי.
  */
 
 import type { RequestHandler } from "express";
 
-import { forbidden, unauthorized } from "../errors.js";
+import { unauthorized } from "../errors.js";
 import type { PrismaClient, Role } from "../generated/prisma/client.js";
 import { verifyToken } from "./jwt.js";
 
@@ -40,15 +42,6 @@ export function requireAuth(prisma: PrismaClient, jwtSecret: string): RequestHan
     }
 
     request.user = { id: user.id, email: user.email, name: user.name, role: user.role };
-    next();
-  };
-}
-
-/** הרשאה לפי תפקיד (RBAC): מאפשר רק את התפקידים שהועברו; משתמש אחר מקבל 403 */
-export function requireRole(...roles: Role[]): RequestHandler {
-  return (request, _response, next) => {
-    if (!request.user) throw unauthorized();
-    if (!roles.includes(request.user.role)) throw forbidden();
     next();
   };
 }
