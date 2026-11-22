@@ -13,3 +13,22 @@ export type {
   PredictionResponse,
   ServiceStatus,
 } from "./aiEngine.js";
+
+export type {
+  AuthResponse,
+  CreateFieldRequest,
+  DiagnoseResponse,
+  DiagnosisHistoryItem,
+  DiagnosisListResponse,
+  DiseaseInfo,
+  FieldDto,
+  FieldListResponse,
+  LoginRequest,
+  ProductOffer,
+  RegisterRequest,
+  ServerErrorCode,
+  ServerErrorResponse,
+  TreatmentOption,
+  UserDto,
+  UserRole,
+} from "./server.js";

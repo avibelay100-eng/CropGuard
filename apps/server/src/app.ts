@@ -1,0 +1,89 @@
+/**
+ * בניית אפליקציית Express של שרת הליבה.
+ *
+ * createApp מקבלת את כל התלויות מבחוץ (מסד נתונים, לקוח AI, אחסון תמונות),
+ * כך שהבדיקות יכולות להחליף אותן - למשל שירות AI מדומה במקום האמיתי.
+ *
+ * נקודות קצה:
+ *   GET  /api/health
+ *   POST /api/auth/register, POST /api/auth/login, GET /api/auth/me
+ *   GET  /api/fields, POST /api/fields
+ *   POST /api/diagnose
+ *   GET  /api/diagnoses
+ */
+
+import cors from "cors";
+import express, { type Express } from "express";
+import { rateLimit } from "express-rate-limit";
+import { pino } from "pino";
+import { pinoHttp } from "pino-http";
+
+import type { ServerConfig } from "./config.js";
+import { errorBody, errorHandler, notFoundHandler } from "./errors.js";
+import type { PrismaClient } from "./generated/prisma/client.js";
+import { authRouter } from "./routes/auth.js";
+import { diagnoseRouter } from "./routes/diagnose.js";
+import { diagnosesRouter } from "./routes/diagnoses.js";
+import { fieldsRouter } from "./routes/fields.js";
+import type { AiClient } from "./services/aiClient.js";
+import type { ImageStore } from "./services/imageStore.js";
+import "./types/express.js";
+
+export interface AppDeps {
+  prisma: PrismaClient;
+  config: ServerConfig;
+  aiClient: AiClient;
+  imageStore: ImageStore;
+}
+
+export interface AppOptions {
+  /** false מכבה את הלוגים (בבדיקות) */
+  logger?: boolean;
+}
+
+export function createApp(deps: AppDeps, options: AppOptions = {}): Express {
+  const app = express();
+  app.disable("x-powered-by");
+
+  if (options.logger !== false) {
+    const logger = pino({
+      name: "cropguard.server",
+      level: deps.config.logLevel,
+      // לא כותבים טוקנים ועוגיות ללוג
+      redact: ["req.headers.authorization", "req.headers.cookie"],
+    });
+    app.use(pinoHttp({ logger }));
+  }
+
+  app.use(cors({ origin: deps.config.corsOrigins }));
+  app.use(express.json({ limit: "100kb" }));
+
+  app.get("/api/health", (_request, response) => {
+    response.json({ status: "ok", service: "CropGuard Server" });
+  });
+
+  // הגבלת קצב על הרשמה/התחברות - הגנה מניחוש סיסמאות
+  if (deps.config.authRateLimit > 0) {
+    app.use(
+      "/api/auth",
+      rateLimit({
+        windowMs: 15 * 60 * 1000,
+        limit: deps.config.authRateLimit,
+        standardHeaders: "draft-8",
+        legacyHeaders: false,
+        handler: (_request, response) => {
+          response.status(429).json(errorBody("too_many_requests", "Too many attempts. Please try again later."));
+        },
+      }),
+    );
+  }
+
+  app.use("/api/auth", authRouter(deps));
+  app.use("/api/fields", fieldsRouter(deps));
+  app.use("/api/diagnose", diagnoseRouter(deps));
+  app.use("/api/diagnoses", diagnosesRouter(deps));
+
+  app.use(notFoundHandler);
+  app.use(errorHandler);
+  return app;
+}
