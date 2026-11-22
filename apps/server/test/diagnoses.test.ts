@@ -87,6 +87,17 @@ describe.skipIf(!hasTestDb)("GET /api/diagnoses", () => {
     expect(response.body.total).toBe(2);
   });
 
+  it("filters by healthy / infected status", async () => {
+    const { farmerA, ids } = await scenario();
+    const healthy = await list(farmerA.token, "?status=healthy");
+    const infected = await list(farmerA.token, "?status=infected");
+
+    expect(healthy.body.items.map((d: { id: string }) => d.id)).toEqual([ids.a2]);
+    expect(infected.body.items.map((d: { id: string }) => d.id)).toEqual([ids.a3, ids.a1]);
+    expect(infected.body.total).toBe(2);
+    expect((await list(farmerA.token, "?status=sick")).status).toBe(422);
+  });
+
   it("returns 404 when a farmer filters by another farmer's field", async () => {
     const { farmerA, fieldB1 } = await scenario();
     expect((await list(farmerA.token, `?fieldId=${fieldB1.id}`)).status).toBe(404);

@@ -4,6 +4,7 @@
  * סינון (query string):
  *   fieldId  - רק אבחונים של חלקה מסוימת
  *   farmerId - רק אבחונים של חקלאי מסוים (לאגרונום/מנהל; חקלאי רואה תמיד רק את שלו)
+ *   status   - "healthy" או "infected"
  *   limit    - כמה שורות להחזיר (1..100, ברירת מחדל 20)
  *   offset   - מאיזו שורה להתחיל (לעימוד)
  */
@@ -21,6 +22,7 @@ import type { Prisma } from "../generated/prisma/client.js";
 const querySchema = z.object({
   fieldId: z.string().min(1).optional(),
   farmerId: z.string().min(1).optional(),
+  status: z.enum(["healthy", "infected"]).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   offset: z.coerce.number().int().min(0).default(0),
 });
@@ -48,6 +50,7 @@ export function diagnosesRouter({ prisma, config }: AppDeps): Router {
     const where: Prisma.DiagnosisWhereInput = {
       ...(query.fieldId ? { fieldId: query.fieldId } : {}),
       ...(ownerId ? { field: { ownerId } } : {}),
+      ...(query.status ? { isHealthy: query.status === "healthy" } : {}),
     };
 
     const [items, total] = await Promise.all([

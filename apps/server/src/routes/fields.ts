@@ -22,6 +22,12 @@ const createFieldSchema = z.object({
   ownerId: z.string().min(1).optional(),
 });
 
+// מה כל חלקה מחזירה בנוסף לשדות שלה: מספר האבחונים ושם הבעלים
+const fieldInclude = {
+  _count: { select: { diagnoses: true } },
+  owner: { select: { name: true } },
+} as const;
+
 const listQuerySchema = z.object({
   ownerId: z.string().min(1).optional(),
 });
@@ -44,7 +50,7 @@ export function fieldsRouter({ prisma, config }: AppDeps): Router {
 
     const fields = await prisma.field.findMany({
       where: ownerId ? { ownerId } : {},
-      include: { _count: { select: { diagnoses: true } } },
+      include: fieldInclude,
       orderBy: { createdAt: "desc" },
     });
     const body: FieldListResponse = { items: fields.map(toFieldDto) };
@@ -71,7 +77,7 @@ export function fieldsRouter({ prisma, config }: AppDeps): Router {
         longitude: input.longitude,
         ownerId,
       },
-      include: { _count: { select: { diagnoses: true } } },
+      include: fieldInclude,
     });
     response.status(201).json(toFieldDto(field));
   });

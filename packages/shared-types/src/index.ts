@@ -20,6 +20,7 @@ export type {
   DiagnoseResponse,
   DiagnosisHistoryItem,
   DiagnosisListResponse,
+  DiagnosisStatusFilter,
   DiseaseInfo,
   FieldDto,
   FieldListResponse,

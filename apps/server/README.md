@@ -21,7 +21,7 @@ npm run db:seed
 npm run dev
 ```
 
-השרת עולה ב-`http://localhost:4000`.
+השרת עולה ב-`http://localhost:3000` (ה-API ב-`/api`). אפליקציית ה-React ב-`apps/client` מתחברת אליו.
 
 ## ה-API
 

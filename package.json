@@ -9,11 +9,14 @@
   "workspaces": [
     "packages/shared-types",
     "services/ai_engine",
-    "apps/server"
+    "apps/server",
+    "apps/client"
   ],
   "scripts": {
     "dev:ai": "npm run dev -w services/ai_engine",
     "dev:server": "npm run dev -w apps/server",
+    "dev:client": "npm run dev -w apps/client",
+    "lint": "npm run lint --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"

@@ -40,6 +40,7 @@ describe.skipIf(!hasTestDb)("field routes", () => {
         latitude: 31.25,
         longitude: 34.79,
         ownerId: farmer.user.id,
+        ownerName: farmer.user.name,
         diagnosisCount: 0,
       });
       expect(await context.prisma.field.count()).toBe(1);

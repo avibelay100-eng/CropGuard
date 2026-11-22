@@ -18,7 +18,9 @@ export function toUserDto(user: Pick<User, "id" | "email" | "name" | "role" | "c
   };
 }
 
-export function toFieldDto(field: Field & { _count: { diagnoses: number } }): FieldDto {
+export function toFieldDto(
+  field: Field & { _count: { diagnoses: number }; owner: Pick<User, "name"> },
+): FieldDto {
   return {
     id: field.id,
     name: field.name,
@@ -26,6 +28,7 @@ export function toFieldDto(field: Field & { _count: { diagnoses: number } }): Fi
     latitude: field.latitude,
     longitude: field.longitude,
     ownerId: field.ownerId,
+    ownerName: field.owner.name,
     diagnosisCount: field._count.diagnoses,
     createdAt: field.createdAt.toISOString(),
     updatedAt: field.updatedAt.toISOString(),

@@ -1,0 +1,100 @@
+/*
+ * CropGuard - מערכת העיצוב.
+ *
+ * השפה החזותית לקוחה מעולם התוויות: תווית תכשיר להגנת הצומח ותווית דגימה בוטנית.
+ * צבעים: נייר ירקרק, דיו יער, ירוק כלורופיל לפעולות, צהוב קש לאזהרות ומחירים,
+ * אדום כימשון לנגוע, חום אדמה לטקסט משני.
+ */
+
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f4f6f1;
+  --color-paper-deep: #e8ece2;
+  --color-ink: #1d2b22;
+  --color-soil: #6b5b47;
+  --color-line: #cfd6c8;
+  --color-leaf: #2f6b3f;
+  --color-leaf-dark: #24542f;
+  --color-leaf-soft: #e1ecdf;
+  --color-straw: #e3b23c;
+  --color-straw-soft: #f8edd0;
+  --color-straw-ink: #6d4f08;
+  --color-blight: #a8382b;
+  --color-blight-soft: #f6e2de;
+
+  --font-sans: "IBM Plex Sans Hebrew", "Segoe UI", Arial, sans-serif;
+  --font-display: "Frank Ruhl Libre", "IBM Plex Sans Hebrew", serif;
+  --font-latin: "IBM Plex Serif", Georgia, serif;
+
+  --radius-label: 4px;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    line-height: 1.2;
+    text-wrap: balance;
+  }
+
+  /* מיקוד מקלדת ברור בכל רכיב אינטראקטיבי */
+  :focus-visible {
+    outline: 3px solid var(--color-straw);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* שדה קלט אחיד לכל הטפסים */
+  .input {
+    width: 100%;
+    border: 1.5px solid var(--color-line);
+    border-radius: var(--radius-label);
+    background: #fff;
+    padding: 0.625rem 0.75rem;
+    font-size: 1rem;
+    color: var(--color-ink);
+  }
+  .input:focus {
+    border-color: var(--color-leaf);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-leaf-soft);
+  }
+  .input[aria-invalid="true"] {
+    border-color: var(--color-blight);
+  }
+}
+
+/* אנימציה אחת בלבד במערכת: פס הסטטוס של תווית התוצאה "נצבע" כשהתוצאה מגיעה */
+@keyframes band-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}

@@ -68,6 +68,8 @@ export interface FieldDto {
   latitude: number;
   longitude: number;
   ownerId: string;
+  /** שם הבעלים - חשוב לאגרונום שרואה חלקות של כמה חקלאים */
+  ownerName: string;
   /** מספר האבחונים בחלקה */
   diagnosisCount: number;
   createdAt: string;
@@ -162,6 +164,9 @@ export interface DiagnosisHistoryItem {
   /** החומר הפעיל הראשון שהומלץ, או null */
   activeIngredient: string | null;
 }
+
+/** סינון לפי מצב העלה ב-GET /api/diagnoses?status= */
+export type DiagnosisStatusFilter = "healthy" | "infected";
 
 /** התשובה של GET /api/diagnoses */
 export interface DiagnosisListResponse {
