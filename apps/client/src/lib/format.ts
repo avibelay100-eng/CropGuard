@@ -31,6 +31,21 @@ export function formatDate(iso: string): string {
   return dateOnly.format(new Date(iso));
 }
 
+// תאריך בלבד ("YYYY-MM-DD") מוצג ב-UTC, כדי שאזור הזמן של הדפדפן לא יזיז אותו ביום
+const calendarDate = new Intl.DateTimeFormat("he-IL", { dateStyle: "medium", timeZone: "UTC" });
+
+/** תאריך בלבד בעברית מ-"YYYY-MM-DD" (תאריכי שתילה, ריסוס וקטיף), למשל "29 בנוב׳ 2026" */
+export function formatCalendarDate(value: string): string {
+  return calendarDate.format(new Date(`${value}T00:00:00.000Z`));
+}
+
+/** הוספת ימים לתאריך "YYYY-MM-DD" - אותו חישוב כמו בשרת (services/phi.ts), לתצוגה מקדימה בטופס */
+export function addDays(value: string, days: number): string {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 /** שמות התפקידים בעברית לתצוגה */
 export const ROLE_LABELS_HE: Record<UserRole, string> = {
   FARMER: "חקלאי",

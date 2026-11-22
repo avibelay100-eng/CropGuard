@@ -45,7 +45,7 @@
 
 - **אחריות:** משתמשים, אימות, הרשאות, חלקות, אבחונים, המלצות טיפול, מחירים והיסטוריה.
 - **טכנולוגיה:** Express 5, Prisma 7 עם PostgreSQL, jsonwebtoken, bcrypt, zod ו-multer.
-- **נקודות קצה:** `/api/auth/*`, `/api/fields`, `/api/diagnose`, `/api/diagnoses` (פירוט ב-[README של השרת](../apps/server/README.md)).
+- **נקודות קצה:** `/api/auth/*`, `/api/fields` (כולל עריכה ומחיקה), `/api/fields/:id/logs` (יומן שדה ו-PHI), `/api/diagnose`, `/api/diagnoses`, `/api/library`, `/api/news` (פירוט ב-[README של השרת](../apps/server/README.md)).
 - **שכבות:** `routes/` (HTTP), `services/` (לוגיקה: לקוח AI, המלצות, אחסון תמונות), `auth/`,
   `i18n/` (מילונים בעברית), `dto.ts` (המרה מהמסד לתשובה).
 

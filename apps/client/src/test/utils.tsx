@@ -7,6 +7,7 @@ import type {
   DiagnosisHistoryItem,
   DiagnosisListResponse,
   FieldDto,
+  FieldLogDto,
   UserDto,
 } from "@cropguard/shared-types";
 import { render } from "@testing-library/react";
@@ -99,8 +100,39 @@ export function field(overrides: Partial<FieldDto> = {}): FieldDto {
     ownerId: farmer.id,
     ownerName: farmer.name,
     diagnosisCount: 0,
+    areaDunams: null,
+    cultivationMethod: null,
+    irrigationMethod: null,
+    variety: null,
+    plantingDate: null,
+    expectedHarvestDate: null,
+    notes: null,
+    logCount: 0,
+    harvestBlockedUntil: null,
     createdAt: "2026-11-01T08:00:00.000Z",
     updatedAt: "2026-11-01T08:00:00.000Z",
+    ...overrides,
+  };
+}
+
+/** רשומה ביומן השדה לדוגמה: ריסוס ב-20 בנובמבר עם 7 ימי המתנה */
+export function fieldLog(overrides: Partial<FieldLogDto> = {}): FieldLogDto {
+  return {
+    id: "l-1",
+    fieldId: "f-1",
+    type: "SPRAY",
+    appliedOn: "2026-11-20",
+    productName: "Ridomil Gold MZ",
+    activeIngredient: "metalaxyl-m + mancozeb",
+    activeIngredientHe: "מטלקסיל-M + מנקוזב",
+    dosePerDunam: 250,
+    doseUnit: "g",
+    phiDays: 7,
+    safeHarvestDate: "2026-11-27",
+    diagnosisId: null,
+    disease: null,
+    notes: null,
+    createdAt: "2026-11-20T08:00:00.000Z",
     ...overrides,
   };
 }
@@ -129,14 +161,14 @@ export const lateBlightResult: DiagnoseResponse = {
       activeIngredient: "metalaxyl-m + mancozeb",
       activeIngredientHe: "מטלקסיל-M + מנקוזב",
       products: [
-        { productName: "Ridomil Gold MZ", packageSize: "1 kg", minPriceILS: 110, maxPriceILS: 180, isVerified: false, priceSource: "placeholder" },
+        { productName: "Ridomil Gold MZ", packageSize: "1 kg", minPriceILS: 110, maxPriceILS: 180, isVerified: false, priceSource: "placeholder", phiDays: 7 },
       ],
     },
     {
       activeIngredient: "mandipropamid",
       activeIngredientHe: "מנדיפרופמיד",
       products: [
-        { productName: "Revus 250 SC", packageSize: "1 L", minPriceILS: 300, maxPriceILS: 480, isVerified: false, priceSource: "placeholder" },
+        { productName: "Revus 250 SC", packageSize: "1 L", minPriceILS: 300, maxPriceILS: 480, isVerified: false, priceSource: "placeholder", phiDays: 3 },
       ],
     },
   ],

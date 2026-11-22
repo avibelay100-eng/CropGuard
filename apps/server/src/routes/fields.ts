@@ -1,39 +1,88 @@
 /**
  * חלקות:
- *   GET  /api/fields  - FARMER רואה רק את החלקות שלו; AGRONOMIST ו-ADMIN רואים הכול
- *                       (ואפשר לסנן לפי ?ownerId=)
- *   POST /api/fields  - יצירת חלקה; רק ADMIN יכול ליצור חלקה עבור משתמש אחר (ownerId)
+ *   GET    /api/fields      - FARMER רואה רק את החלקות שלו; AGRONOMIST ו-ADMIN רואים הכול
+ *                            (ואפשר לסנן לפי ?ownerId=)
+ *   POST   /api/fields      - יצירת חלקה; רק ADMIN יכול ליצור חלקה עבור משתמש אחר (ownerId)
+ *   GET    /api/fields/:id  - חלקה אחת (מי שרשאי לראות אותה)
+ *   PATCH  /api/fields/:id  - עריכה (בעל החלקה או ADMIN)
+ *   DELETE /api/fields/:id  - מחיקה, כולל כל האבחונים (והתמונות שלהם) וכל יומן השדה
+ *   /api/fields/:id/logs    - יומן השדה (routes/fieldLogs.ts)
+ *
+ * פרטי החלקה המורחבים (שטח בדונמים, שיטת גידול והשקיה, עונה, הערות) כולם לא חובה.
  */
 
 import type { FieldListResponse } from "@cropguard/shared-types";
 import { Router } from "express";
 import { z } from "zod";
 
+import { findAccessibleField } from "../auth/fieldAccess.js";
 import { canSeeAllFarmers, requireAuth } from "../auth/middleware.js";
 import type { AppDeps } from "../app.js";
 import { toFieldDto } from "../dto.js";
-import { forbidden, notFound } from "../errors.js";
+import { forbidden, notFound, validationError } from "../errors.js";
+import { parseDateOnly, todayInIsrael } from "../services/phi.js";
+import { fieldLogsRouter } from "./fieldLogs.js";
+import { dateOnlySchema, fieldIdParam, fieldInclude, optionalText } from "./fieldShared.js";
 
-const createFieldSchema = z.object({
+// ★ התאמה לשוק הישראלי: שטח בדונמים, שיטות גידול נפוצות בארץ (כולל בית רשת ומנהרות), טפטוף/המטרה
+const fieldDetailsShape = {
+  areaDunams: z.number().positive().max(100_000).nullable().optional(),
+  cultivationMethod: z.enum(["OPEN_FIELD", "NET_HOUSE", "GREENHOUSE", "TUNNEL"]).nullable().optional(),
+  irrigationMethod: z.enum(["DRIP", "SPRINKLER"]).nullable().optional(),
+  variety: optionalText(100),
+  plantingDate: dateOnlySchema.nullable().optional(),
+  expectedHarvestDate: dateOnlySchema.nullable().optional(),
+  notes: optionalText(1000),
+};
+
+const coreShape = {
   name: z.string().trim().min(1, "Name is required").max(100),
   cropType: z.string().trim().min(1, "Crop type is required").max(50),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
-  ownerId: z.string().min(1).optional(),
+};
+
+const createFieldSchema = z.object({ ...coreShape, ...fieldDetailsShape, ownerId: z.string().min(1).optional() });
+
+// בעריכה כל שדה לא חובה - שולחים רק את מה שמשתנה
+const updateFieldSchema = z.object({
+  name: coreShape.name.optional(),
+  cropType: coreShape.cropType.optional(),
+  latitude: coreShape.latitude.optional(),
+  longitude: coreShape.longitude.optional(),
+  ...fieldDetailsShape,
 });
 
-// מה כל חלקה מחזירה בנוסף לשדות שלה: מספר האבחונים ושם הבעלים
-const fieldInclude = {
-  _count: { select: { diagnoses: true } },
-  owner: { select: { name: true } },
-} as const;
+type FieldDetailsInput = z.infer<z.ZodObject<typeof fieldDetailsShape>>;
+
+/** פרטים מורחבים מהבקשה -> נתונים ל-Prisma. undefined = לא לגעת, null = למחוק, תאריך -> Date */
+function toDetailsData(input: FieldDetailsInput) {
+  const toDate = (value: string | null | undefined) => (value == null ? value : parseDateOnly(value));
+  return {
+    areaDunams: input.areaDunams,
+    cultivationMethod: input.cultivationMethod,
+    irrigationMethod: input.irrigationMethod,
+    variety: input.variety,
+    plantingDate: toDate(input.plantingDate),
+    expectedHarvestDate: toDate(input.expectedHarvestDate),
+    notes: input.notes,
+  };
+}
+
+/** הקטיף הצפוי לא יכול להיות לפני השתילה */
+function assertSeasonOrder(plantingDate: string | null | undefined, expectedHarvestDate: string | null | undefined): void {
+  if (plantingDate && expectedHarvestDate && expectedHarvestDate < plantingDate) {
+    throw validationError("expectedHarvestDate: must be on or after plantingDate");
+  }
+}
 
 const listQuerySchema = z.object({
   ownerId: z.string().min(1).optional(),
 });
 
 /** בונה את נתיבי החלקות; כולם דורשים התחברות (router.use למטה) */
-export function fieldsRouter({ prisma, config }: AppDeps): Router {
+export function fieldsRouter(deps: AppDeps): Router {
+  const { prisma, config, imageStore } = deps;
   const router = Router();
   router.use(requireAuth(prisma, config.jwtSecret));
 
@@ -52,7 +101,7 @@ export function fieldsRouter({ prisma, config }: AppDeps): Router {
 
     const fields = await prisma.field.findMany({
       where: ownerId ? { ownerId } : {},
-      include: fieldInclude,
+      include: fieldInclude(todayInIsrael()),
       orderBy: { createdAt: "desc" },
     });
     const body: FieldListResponse = { items: fields.map(toFieldDto) };
@@ -63,6 +112,7 @@ export function fieldsRouter({ prisma, config }: AppDeps): Router {
   router.post("/", async (request, response) => {
     const user = request.user!;
     const input = createFieldSchema.parse(request.body);
+    assertSeasonOrder(input.plantingDate, input.expectedHarvestDate);
 
     let ownerId = user.id;
     if (input.ownerId && input.ownerId !== user.id) {
@@ -78,12 +128,81 @@ export function fieldsRouter({ prisma, config }: AppDeps): Router {
         cropType: input.cropType,
         latitude: input.latitude,
         longitude: input.longitude,
+        ...toDetailsData(input),
         ownerId,
       },
-      include: fieldInclude,
+      include: fieldInclude(todayInIsrael()),
     });
     response.status(201).json(toFieldDto(field));
   });
+
+  // חלקה אחת - לפי כללי הצפייה (חקלאי אחר מקבל 404)
+  router.get("/:id", async (request, response) => {
+    const field = await findAccessibleField(prisma, request.user!, fieldIdParam(request), "read");
+    const full = await prisma.field.findUniqueOrThrow({ where: { id: field.id }, include: fieldInclude(todayInIsrael()) });
+    response.json(toFieldDto(full));
+  });
+
+  /**
+   * עריכת חלקה (בעל החלקה או מנהל). שולחים רק שדות שמשתנים; null מוחק פרט מורחב.
+   * שינוי הגידול לא משנה אבחונים קודמים - כל אבחון נשמר עם בדיקת ההתאמה שהייתה בזמנו.
+   */
+  router.patch("/:id", async (request, response) => {
+    const user = request.user!;
+    const field = await findAccessibleField(prisma, user, fieldIdParam(request), "write");
+    const input = updateFieldSchema.parse(request.body);
+
+    // בדיקת סדר העונה מול הערכים שיהיו אחרי העדכון (מה שלא נשלח - נשאר כמו שהוא)
+    if (input.plantingDate !== undefined || input.expectedHarvestDate !== undefined) {
+      const current = await prisma.field.findUniqueOrThrow({
+        where: { id: field.id },
+        select: { plantingDate: true, expectedHarvestDate: true },
+      });
+      assertSeasonOrder(
+        input.plantingDate !== undefined ? input.plantingDate : current.plantingDate?.toISOString().slice(0, 10),
+        input.expectedHarvestDate !== undefined ? input.expectedHarvestDate : current.expectedHarvestDate?.toISOString().slice(0, 10),
+      );
+    }
+
+    const updated = await prisma.field.update({
+      where: { id: field.id },
+      data: {
+        name: input.name,
+        cropType: input.cropType,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        ...toDetailsData(input),
+      },
+      include: fieldInclude(todayInIsrael()),
+    });
+    request.log?.info({ fieldId: field.id, by: user.id }, "Field updated");
+    response.json(toFieldDto(updated));
+  });
+
+  /**
+   * מחיקת חלקה (בעל החלקה או מנהל). המסד מוחק בשרשור את האבחונים ואת יומן השדה;
+   * את קובצי התמונות מוחקים כאן, אחרי שהמחיקה במסד הצליחה (כשל בקובץ רק נרשם בלוג).
+   */
+  router.delete("/:id", async (request, response) => {
+    const user = request.user!;
+    const field = await findAccessibleField(prisma, user, fieldIdParam(request), "write");
+
+    const images = await prisma.diagnosis.findMany({ where: { fieldId: field.id }, select: { imageUrl: true } });
+    await prisma.field.delete({ where: { id: field.id } });
+    await Promise.all(
+      images.map(({ imageUrl }) =>
+        imageStore.remove(imageUrl).catch((err: unknown) => {
+          request.log?.warn({ err, imageUrl }, "Could not delete diagnosis image");
+        }),
+      ),
+    );
+
+    request.log?.info({ fieldId: field.id, diagnoses: images.length, by: user.id }, "Field deleted");
+    response.status(204).end();
+  });
+
+  // ★ יומן השדה ו-PHI - נתיבים מתחת לחלקה (ההתחברות כבר נבדקה למעלה)
+  router.use("/:id/logs", fieldLogsRouter(deps));
 
   return router;
 }

@@ -7,18 +7,22 @@
 
 import type {
   AuthResponse,
+  CreateFieldLogRequest,
   CreateFieldRequest,
   DiagnoseResponse,
   DiagnosisListResponse,
   DiagnosisStatusFilter,
   FieldDto,
   FieldListResponse,
+  FieldLogDto,
+  FieldLogListResponse,
   LibraryResponse,
   LoginRequest,
   NewsLanguage,
   NewsResponse,
   PasswordResetConfirmRequest,
   RegisterRequest,
+  UpdateFieldRequest,
   UpdateMeRequest,
   ServerErrorCode,
   UserDto,
@@ -147,6 +151,22 @@ export const api = {
 
   createField: (input: CreateFieldRequest) =>
     request<FieldDto>("/fields", { method: "POST", body: JSON.stringify(input) }),
+
+  /** עריכת חלקה - רק השדות שנשלחו משתנים; null מוחק פרט מורחב */
+  updateField: (id: string, input: UpdateFieldRequest) =>
+    request<FieldDto>(`/fields/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }),
+
+  /** מחיקת חלקה - כולל כל האבחונים ויומן השדה שלה; השרת מחזיר 204 */
+  deleteField: (id: string) => request<null>(`/fields/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  /** ★ יומן השדה: הרשומות, החלקה (כולל מצב הקטיף) ו"היום" בישראל */
+  listFieldLogs: (fieldId: string) => request<FieldLogListResponse>(`/fields/${encodeURIComponent(fieldId)}/logs`),
+
+  createFieldLog: (fieldId: string, input: CreateFieldLogRequest) =>
+    request<FieldLogDto>(`/fields/${encodeURIComponent(fieldId)}/logs`, { method: "POST", body: JSON.stringify(input) }),
+
+  deleteFieldLog: (fieldId: string, logId: string) =>
+    request<null>(`/fields/${encodeURIComponent(fieldId)}/logs/${encodeURIComponent(logId)}`, { method: "DELETE" }),
 
   diagnose: (fieldId: string, image: File) => {
     const form = new FormData();

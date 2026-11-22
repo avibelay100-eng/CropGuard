@@ -12,6 +12,7 @@ import { DiagnosisResult } from "../components/DiagnosisResult";
 import { ImagePicker } from "../components/ImagePicker";
 import { Button, Notice, PageHeader, SelectField, Spinner } from "../components/ui";
 import { CROPS, cropLabelHe } from "../lib/crops";
+import { prefillFromDiagnosis } from "../lib/journalPrefill";
 
 /** ★ מנגנון ליבה של CropGuard: מסך הסריקה - חלקה + תמונה -> אבחון. בחירת החלקה היא שמאפשרת לשרת לבדוק התאמה לגידול */
 export function ScanPage() {
@@ -123,6 +124,20 @@ export function ScanPage() {
         <div ref={resultRef} tabIndex={-1} className="flex flex-col gap-4 outline-none">
           <DiagnosisResult result={result} />
           <div className="flex flex-wrap gap-3">
+            {/*
+              ★ יומן שדה ו-PHI: רישום הטיפול ממלא אוטומטית את המחלה, התכשירים וימי ההמתנה.
+              מוצג רק כשיש תכשירים מומלצים - לא לעלה בריא, לא למחלה בלי טיפול כימי,
+              ולא באי-התאמה לגידול (Crop Mismatch Guard כבר חסם שם את ההמלצות).
+            */}
+            {result.treatments.length > 0 && result.cropCheck.matches && (
+              <Link
+                to={`/fields/${result.diagnosis.fieldId}/journal`}
+                state={{ prefill: prefillFromDiagnosis(result) }}
+                className="rounded-[var(--radius-label)] bg-straw px-5 py-2.5 font-semibold text-ink hover:brightness-95"
+              >
+                רשום טיפול ביומן השדה
+              </Link>
+            )}
             <Button onClick={startOver}>סריקה חדשה</Button>
             <Link
               to="/history"

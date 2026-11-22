@@ -61,6 +61,15 @@ describe("product price ranges", () => {
     }
   });
 
+  // ★ PHI: כל מוצר צריך ימי המתנה לקטיף, כדי שיומן השדה יוכל למלא אותם אוטומטית
+  it("have a whole-number pre-harvest interval (PHI) of 0..365 days", () => {
+    for (const product of PRODUCT_PRICES) {
+      expect(Number.isInteger(product.phiDays), product.productName).toBe(true);
+      expect(product.phiDays, product.productName).toBeGreaterThanOrEqual(0);
+      expect(product.phiDays, product.productName).toBeLessThanOrEqual(365);
+    }
+  });
+
   it("are not marked verified without a real source", () => {
     for (const product of PRODUCT_PRICES.filter((p) => p.isVerified)) {
       expect(product.priceSource, product.productName).not.toMatch(/placeholder/i);

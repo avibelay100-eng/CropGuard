@@ -2,7 +2,13 @@
  * רכיבי ממשק בסיסיים: כפתור, שדה טופס, הודעה, ספינר.
  */
 
-import type { ComponentPropsWithRef, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import type {
+  ComponentPropsWithRef,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
 import { useId } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
@@ -88,6 +94,22 @@ export function SelectField({
         <select id={id} aria-describedby={describedBy} aria-invalid={invalid} className="input" {...props}>
           {children}
         </select>
+      )}
+    </FieldShell>
+  );
+}
+
+/** שדה טקסט רב-שורות (הערות), באותה מעטפת נגישה */
+export function TextAreaField({
+  label,
+  hint,
+  error,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { label: string; hint?: string; error?: string }) {
+  return (
+    <FieldShell label={label} hint={hint} error={error}>
+      {({ id, describedBy, invalid }) => (
+        <textarea id={id} aria-describedby={describedBy} aria-invalid={invalid} rows={3} className="input" {...props} />
       )}
     </FieldShell>
   );

@@ -170,9 +170,9 @@ export function createTestContext(configOverrides: Partial<ServerConfig> = {}): 
   return { app, prisma, ai, images, sms };
 }
 
-/** מוחק את כל המשתמשים, החלקות, האבחונים וקודי השחזור (נתוני הבסיס - מחירים והמלצות - נשארים) */
+/** מוחק את כל המשתמשים, החלקות, האבחונים, יומני השדה וקודי השחזור (נתוני הבסיס - מחירים והמלצות - נשארים) */
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "password_reset_codes", "diagnoses", "fields", "users" CASCADE');
+  await prisma.$executeRawUnsafe('TRUNCATE TABLE "password_reset_codes", "field_logs", "diagnoses", "fields", "users" CASCADE');
 }
 
 let userCounter = 0;

@@ -9,6 +9,7 @@ import { Layout } from "./components/Layout";
 import { RequireAuth } from "./components/RequireAuth";
 import { AccountPage } from "./pages/AccountPage";
 import { LoginPage, RegisterPage } from "./pages/AuthPages";
+import { FieldJournalPage } from "./pages/FieldJournalPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { FieldsPage } from "./pages/FieldsPage";
 import { HistoryPage } from "./pages/HistoryPage";
@@ -40,6 +41,8 @@ export function App() {
           <Route index element={<Navigate to="/scan" replace />} />
           <Route path="/scan" element={<ScanPage />} />
           <Route path="/fields" element={<FieldsPage />} />
+          {/* ★ יומן שדה ו-PHI של חלקה אחת */}
+          <Route path="/fields/:fieldId/journal" element={<FieldJournalPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/news" element={<NewsPage />} />

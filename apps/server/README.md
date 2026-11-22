@@ -38,7 +38,13 @@ npm run dev
 | `POST /api/auth/password-reset/request` | כולם | שליחת קוד בן 6 ספרות ב-SMS לטלפון של החשבון (תשובה זהה תמיד) |
 | `POST /api/auth/password-reset/confirm` | כולם | קוד + סיסמה חדשה; מבטל את כל הטוקנים הישנים |
 | `GET /api/fields` | מחובר | חלקות. חקלאי: רק שלו. אגרונום/מנהל: הכול (`?ownerId=` לסינון) |
-| `POST /api/fields` | מחובר | יצירת חלקה. רק מנהל יכול ליצור עבור אחר (`ownerId`) |
+| `POST /api/fields` | מחובר | יצירת חלקה. רק מנהל יכול ליצור עבור אחר (`ownerId`). פרטים לא חובה: `areaDunams`, `cultivationMethod`, `irrigationMethod`, `variety`, `plantingDate`, `expectedHarvestDate`, `notes` |
+| `GET /api/fields/:id` | מחובר | חלקה אחת (חקלאי אחר מקבל 404) |
+| `PATCH /api/fields/:id` | בעלים/מנהל | עריכה - רק השדות שנשלחו; `null` מוחק פרט (אגרונום: 403) |
+| `DELETE /api/fields/:id` | בעלים/מנהל | מחיקה, כולל כל האבחונים (והתמונות) ויומן השדה |
+| `GET /api/fields/:id/logs` | מחובר | ★ יומן השדה: רשומות, החלקה (כולל `harvestBlockedUntil`) ו-`today` בישראל |
+| `POST /api/fields/:id/logs` | בעלים/מנהל | ריסוס/דישון/השקיה. בריסוס `phiDays` חובה, ו-`safeHarvestDate` מחושב בשרת |
+| `DELETE /api/fields/:id/logs/:logId` | בעלים/מנהל | מחיקת רשומה ביומן |
 | `POST /api/diagnose` | מחובר | **הנתיב המרכזי** - טופס multipart: `image` + `fieldId`. כולל בדיקת התאמה לגידול של החלקה |
 | `GET /api/diagnoses` | מחובר | היסטוריה: `?fieldId=`, `?farmerId=`, `?status=healthy\|infected`, `?limit=` (1-100), `?offset=` |
 | `DELETE /api/diagnoses/:id` | בעל החלקה / מנהל | מחיקת אבחון (והתמונה שלו). אגרונום לא מוחק נתונים של חקלאי (403) |
@@ -128,7 +134,8 @@ npm run dev
 | `src/config.ts` | הגדרות ממשתני סביבה, עם בדיקת תקינות בעלייה |
 | `src/errors.ts` | טיפול אחיד בשגיאות |
 | `src/auth/` | JWT, bcrypt, middleware לאימות ולהרשאות |
-| `src/routes/` | `auth`, `fields`, `diagnose`, `diagnoses` |
+| `src/routes/` | `auth`, `fields`, `fieldLogs` (יומן שדה), `diagnose`, `diagnoses`, `library`, `news` |
+| `src/services/phi.ts` | ★ חישובי PHI: "היום" לפי לוח השנה בישראל, תאריך הריסוס + ימי ההמתנה |
 | `src/services/aiClient.ts` | לקוח לשירות ה-AI (עם timeout ובדיקת התשובה) |
 | `src/services/treatments.ts` | בניית המלצת הטיפול והמחירים מהמסד |
 | `src/services/imageStore.ts` | שמירת תמונות (תיקיית `uploads/`) |

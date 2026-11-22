@@ -70,8 +70,30 @@ export interface AuthResponse {
 // חלקות
 // ---------------------------------------------------------------------------
 
+/** ★ התאמה לשוק הישראלי: שיטת הגידול - שטח פתוח, בית רשת, חממה, מנהרות */
+export type CultivationMethod = "OPEN_FIELD" | "NET_HOUSE" | "GREENHOUSE" | "TUNNEL";
+
+/** שיטת ההשקיה - טפטוף או המטרה */
+export type IrrigationMethod = "DRIP" | "SPRINKLER";
+
+/**
+ * פרטי החלקה המורחבים - כולם לא חובה; null = לא הוגדר.
+ * תאריכים בפורמט "YYYY-MM-DD" (תאריך בלבד, בלי שעה).
+ */
+export interface FieldDetails {
+  /** שטח בדונמים (דונם = 1,000 מ"ר) */
+  areaDunams: number | null;
+  cultivationMethod: CultivationMethod | null;
+  irrigationMethod: IrrigationMethod | null;
+  /** הזן בעונה הנוכחית */
+  variety: string | null;
+  plantingDate: string | null;
+  expectedHarvestDate: string | null;
+  notes: string | null;
+}
+
 /** גוף הבקשה של POST /api/fields */
-export interface CreateFieldRequest {
+export interface CreateFieldRequest extends Partial<FieldDetails> {
   name: string;
   /** סוג הגידול, למשל "Tomato" */
   cropType: string;
@@ -83,8 +105,11 @@ export interface CreateFieldRequest {
   ownerId?: string;
 }
 
+/** גוף הבקשה של PATCH /api/fields/:id - רק השדות שמשתנים; null מוחק פרט מורחב */
+export type UpdateFieldRequest = Partial<Omit<CreateFieldRequest, "ownerId">>;
+
 /** חלקה כפי שהשרת מחזיר אותה */
-export interface FieldDto {
+export interface FieldDto extends FieldDetails {
   id: string;
   name: string;
   cropType: string;
@@ -95,6 +120,13 @@ export interface FieldDto {
   ownerName: string;
   /** מספר האבחונים בחלקה */
   diagnosisCount: number;
+  /** מספר הרשומות ביומן השדה */
+  logCount: number;
+  /**
+   * ★ PHI: אם רוססה לאחרונה - התאריך הראשון שבו מותר לקטוף ("YYYY-MM-DD").
+   * null = אין ריסוס שימי ההמתנה שלו עדיין לא עברו.
+   */
+  harvestBlockedUntil: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -102,6 +134,64 @@ export interface FieldDto {
 /** התשובה של GET /api/fields */
 export interface FieldListResponse {
   items: FieldDto[];
+}
+
+// ---------------------------------------------------------------------------
+// ★ יומן שדה ו-PHI (ימי המתנה לקטיף)
+// ---------------------------------------------------------------------------
+
+/** סוג הרשומה ביומן: ריסוס, דישון או השקיה */
+export type FieldLogType = "SPRAY" | "FERTILIZE" | "IRRIGATE";
+
+/** יחידות המינון לדונם: גרם, סמ"ק, ק"ג, ליטר, מ"ק (מים) */
+export type DoseUnit = "g" | "ml" | "kg" | "L" | "m3";
+
+/** גוף הבקשה של POST /api/fields/:id/logs */
+export interface CreateFieldLogRequest {
+  type: FieldLogType;
+  /** תאריך הביצוע "YYYY-MM-DD"; לא בעתיד */
+  appliedOn: string;
+  productName?: string | null;
+  /** שם החומר הפעיל באנגלית, למשל "mancozeb" */
+  activeIngredient?: string | null;
+  dosePerDunam?: number | null;
+  doseUnit?: DoseUnit | null;
+  /** חובה בריסוס (0..365); אסור בדישון ובהשקיה */
+  phiDays?: number | null;
+  /** האבחון שבעקבותיו רוססה החלקה - חייב להיות של אותה חלקה */
+  diagnosisId?: string | null;
+  notes?: string | null;
+}
+
+/** רשומה ביומן השדה */
+export interface FieldLogDto {
+  id: string;
+  fieldId: string;
+  type: FieldLogType;
+  appliedOn: string;
+  productName: string | null;
+  activeIngredient: string | null;
+  /** שם החומר הפעיל בעברית, אם הוא במילון */
+  activeIngredientHe: string | null;
+  dosePerDunam: number | null;
+  doseUnit: DoseUnit | null;
+  phiDays: number | null;
+  /** התאריך הראשון שבו מותר לקטוף (appliedOn + phiDays); מחושב בשרת */
+  safeHarvestDate: string | null;
+  diagnosisId: string | null;
+  /** המחלה שבגללה רוססה החלקה, אם הרשומה נוצרה מאבחון */
+  disease: DiseaseInfo | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+/** התשובה של GET /api/fields/:id/logs */
+export interface FieldLogListResponse {
+  field: FieldDto;
+  /** מהחדש לישן */
+  items: FieldLogDto[];
+  /** התאריך של היום לפי לוח השנה בישראל ("YYYY-MM-DD") - כך הלקוח והשרת מסכימים מה זה "היום" */
+  today: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,6 +223,8 @@ export interface ProductOffer {
   /** false = מחיר דוגמה שלא אומת; יש להציג אותו עם הסתייגות */
   isVerified: boolean;
   priceSource: string | null;
+  /** PHI - ימי המתנה לקטיף לפי תווית המוצר; ערך דוגמה שיש לאמת מול התווית; null אם לא ידוע */
+  phiDays: number | null;
 }
 
 /** חומר פעיל מומלץ והמוצרים שמכילים אותו */

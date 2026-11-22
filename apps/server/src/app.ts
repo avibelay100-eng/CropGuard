@@ -7,7 +7,8 @@
  * נקודות קצה:
  *   GET  /api/health
  *   POST /api/auth/register, POST /api/auth/login, GET /api/auth/me
- *   GET  /api/fields, POST /api/fields
+ *   GET  /api/fields, POST /api/fields, GET/PATCH/DELETE /api/fields/:id
+ *   GET  /api/fields/:id/logs, POST /api/fields/:id/logs, DELETE /api/fields/:id/logs/:logId  (יומן שדה ו-PHI)
  *   POST /api/diagnose
  *   GET  /api/diagnoses, DELETE /api/diagnoses/:id
  *   GET  /api/news

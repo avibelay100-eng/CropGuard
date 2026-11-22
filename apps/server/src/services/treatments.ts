@@ -96,6 +96,8 @@ function composePlan(recommendation: Recommendation, products: Product[]): Treat
         maxPriceILS: Number(product.maxPriceILS),
         isVerified: product.isVerified,
         priceSource: product.priceSource,
+        // ימי המתנה לקטיף - ממלאים אוטומטית את טופס יומן השדה
+        phiDays: product.phiDays,
       })),
   }));
 
