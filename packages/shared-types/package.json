@@ -1,19 +1,13 @@
 {
   "name": "@cropguard/shared-types",
   "version": "0.1.0",
-  "description": "CropGuard - TypeScript types shared by the AI engine, server and client",
+  "description": "CropGuard - shared API data shapes (JSDoc @typedef) used by the AI engine, server and client",
   "private": true,
   "type": "module",
-  "types": "./src/index.ts",
   "exports": {
-    ".": {
-      "types": "./src/index.ts"
-    }
+    ".": "./src/index.js",
+    "./server": "./src/server.js",
+    "./aiEngine": "./src/aiEngine.js"
   },
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
-  "devDependencies": {
-    "typescript": "^7.0.2"
-  }
+  "main": "./src/index.js"
 }

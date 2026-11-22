@@ -1,18 +1,17 @@
 {
   "name": "cropguard-ai-engine",
   "version": "0.1.0",
-  "description": "CropGuard AI Engine - plant-leaf disease classification REST API (TypeScript + ONNX Runtime)",
+  "description": "CropGuard AI Engine - plant-leaf disease classification REST API (JavaScript + ONNX Runtime)",
   "private": true,
   "type": "module",
-  "main": "dist/server.js",
+  "main": "src/server.js",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit",
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "lint": "oxlint --deny-warnings src test",
     "test": "vitest run"
   },
   "dependencies": {
@@ -26,8 +25,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2",
-    "vitest": "^4.1.12"
+    "vitest": "^4.1.12",
+    "oxlint": "^1.94.0"
   }
 }

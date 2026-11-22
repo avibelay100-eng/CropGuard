@@ -1,7 +1,7 @@
 # @cropguard/shared-types
 
-טיפוסי TypeScript שמשותפים לכל חלקי CropGuard, כדי שהשרת, הלקוח ושירות ה-AI
-ידברו באותה "שפה". שינוי בטיפוס כאן מתגלה מיד בבדיקת הטיפוסים של כל מי שמשתמש בו.
+חוזה הנתונים המשותף לכל חלקי CropGuard, כדי שהשרת, הלקוח ושירות ה-AI
+ידברו באותה "שפה". כל צורה מתועדת כהערת JSDoc `@typedef` - בלי קוד שרץ.
 
 ## מה יש כאן
 
@@ -15,7 +15,7 @@
 | `PredictResult` | `PredictionResponse` או `ErrorResponse` |
 | `LeafStatus`, `ServiceStatus` | `"healthy" \| "infected"`, `"ok" \| "degraded"` |
 
-הקוד נמצא ב-`src/aiEngine.ts`.
+הקוד נמצא ב-`src/aiEngine.js`.
 
 ## שימוש בחבילה אחרת בפרויקט
 
@@ -29,20 +29,17 @@
 
 2. מריצים `npm install` מהתיקייה הראשית.
 
-3. מייבאים עם **`import type`**:
+3. מפנים לטיפוס בהערת JSDoc (עורכי קוד מציגים השלמה אוטומטית):
 
-   ```ts
-   import type { PredictionResponse } from "@cropguard/shared-types";
-
+   ```js
    const response = await fetch("http://localhost:8001/predict", { method: "POST", body: form });
-   const result: PredictionResponse = await response.json();
+   /** @type {import("@cropguard/shared-types/aiEngine").PredictionResponse} */
+   const result = await response.json();
    ```
 
-החבילה מכילה **טיפוסים בלבד**, בלי קוד שרץ, ולכן אין לה שלב build:
-הטיפוסים נמחקים בקומפילציה, ו-`import type` מבטיח שלא תישאר בקוד הסופי שום תלות בחבילה.
+החבילה מכילה **תיעוד בלבד**, בלי קוד שרץ, ולכן אין לה שלב build ואף חלק לא תלוי בה בזמן ריצה.
 
 ## שינוי טיפוס של שירות ה-AI
 
-כל שינוי ב-`src/aiEngine.ts` מחייב שינוי תואם בסכמות ה-JSON שב-
-`services/ai_engine/src/schemas.ts`. אם השדות לא תואמים, `npm run typecheck`
-נכשל ומצביע על המקום.
+כל שינוי ב-`src/aiEngine.js` מחייב שינוי תואם בסכמות ה-JSON שב-
+`services/ai_engine/src/schemas.js` (Fastify מחזיר רק את השדות שבסכמה), ובבדיקות של השירות.

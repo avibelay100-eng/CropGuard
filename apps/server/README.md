@@ -1,6 +1,6 @@
 # CropGuard Server
 
-שרת הליבה של CropGuard: Node.js + TypeScript + Express 5 + Prisma 7 + PostgreSQL.
+שרת הליבה של CropGuard: Node.js (JavaScript) + Express 5 + Prisma 7 + PostgreSQL.
 מקבל תמונת עלה, שולח אותה לשירות ה-AI, מוסיף המלצות טיפול ומחירים בשקלים, ושומר את האבחון.
 
 ## הרצה מהירה
@@ -26,7 +26,7 @@ npm run dev
 ## ה-API
 
 כל הנתיבים מלבד הרשמה/התחברות/health דורשים כותרת `Authorization: Bearer <token>`.
-הטיפוסים של כל הבקשות והתשובות נמצאים ב-`@cropguard/shared-types` (`src/server.ts`).
+הטיפוסים של כל הבקשות והתשובות נמצאים ב-`@cropguard/shared-types` (`src/server.js`).
 
 | נתיב | מי | מה |
 |---|---|---|
@@ -129,18 +129,18 @@ npm run dev
 
 | קובץ | תפקיד |
 |---|---|
-| `src/server.ts` | נקודת הכניסה |
-| `src/app.ts` | בניית אפליקציית Express (מקבלת את התלויות מבחוץ - נוח לבדיקות) |
-| `src/config.ts` | הגדרות ממשתני סביבה, עם בדיקת תקינות בעלייה |
-| `src/errors.ts` | טיפול אחיד בשגיאות |
+| `src/server.js` | נקודת הכניסה |
+| `src/app.js` | בניית אפליקציית Express (מקבלת את התלויות מבחוץ - נוח לבדיקות) |
+| `src/config.js` | הגדרות ממשתני סביבה, עם בדיקת תקינות בעלייה |
+| `src/errors.js` | טיפול אחיד בשגיאות |
 | `src/auth/` | JWT, bcrypt, middleware לאימות ולהרשאות |
 | `src/routes/` | `auth`, `fields`, `fieldLogs` (יומן שדה), `diagnose`, `diagnoses`, `library`, `news` |
-| `src/services/phi.ts` | ★ חישובי PHI: "היום" לפי לוח השנה בישראל, תאריך הריסוס + ימי ההמתנה |
-| `src/services/aiClient.ts` | לקוח לשירות ה-AI (עם timeout ובדיקת התשובה) |
-| `src/services/treatments.ts` | בניית המלצת הטיפול והמחירים מהמסד |
-| `src/services/imageStore.ts` | שמירת תמונות (תיקיית `uploads/`) |
+| `src/services/phi.js` | ★ חישובי PHI: "היום" לפי לוח השנה בישראל, תאריך הריסוס + ימי ההמתנה |
+| `src/services/aiClient.js` | לקוח לשירות ה-AI (עם timeout ובדיקת התשובה) |
+| `src/services/treatments.js` | בניית המלצת הטיפול והמחירים מהמסד |
+| `src/services/imageStore.js` | שמירת תמונות (תיקיית `uploads/`) |
 | `src/i18n/` | שמות המחלות והחומרים הפעילים בעברית, ושמות מדעיים |
-| `src/dto.ts` | המרה משורות המסד לתשובות (בלי שדות פנימיים כמו passwordHash) |
+| `src/dto.js` | המרה משורות המסד לתשובות (בלי שדות פנימיים כמו passwordHash) |
 | `prisma/` | סכמה, מיגרציות, seed ונתוני הבסיס |
 | `scripts/` | `show-db` (הצגת הנתונים), `promote-admin` (הפיכת משתמש למנהל) |
 | `test/` | בדיקות |
@@ -166,14 +166,18 @@ npm test
 | פקודה | מה היא עושה |
 |---|---|
 | `npm run dev` | השרת במצב פיתוח (טעינה מחדש אוטומטית) |
-| `npm run build` / `npm start` | בנייה והרצה לייצור |
+| `npm start` | הרצה לייצור (דרך tsx - ראו הערה למטה) |
 | `npm test` | כל הבדיקות |
-| `npm run typecheck` | בדיקת טיפוסים |
+| `npm run lint` | בדיקת קוד (oxlint) |
 | `npm run db:migrate` | מיגרציה מהשינויים בסכמה |
 | `npm run db:seed` | טעינת מחירים והמלצות (בטוח להריץ שוב) |
 | `npm run db:show` | הצגת תוכן הטבלאות בטרמינל |
 | `npm run promote-admin -- <email>` | הפיכת משתמש רשום למנהל |
 | `npm run prisma:generate` | בניית הקליינט מחדש אחרי שינוי בסכמה |
+
+> **למה השרת רץ דרך `tsx` אם הקוד ב-JavaScript?** כל הקוד שלנו הוא JavaScript, אבל Prisma 7 מייצר
+> את הקליינט (`src/generated/prisma`, לא נשמר ב-git) כקובצי TypeScript בלבד. `tsx` יודע לטעון אותם
+> מתוך קוד JavaScript, ולכן גם `npm run dev` וגם `npm start` רצים דרכו. שירות ה-AI והלקוח לא צריכים אותו.
 
 ### מסד נתונים מקומי עם `prisma dev`
 
@@ -198,11 +202,11 @@ npx prisma dev start cropguard     # הפעלה מחדש
 ## חיבור לאינטרנט מאחורי אנטי-וירוס
 
 שירותי אנטי-וירוס (Avast וכו') סורקים HTTPS וחותמים מחדש בתעודה משלהם, ש-Node לא מכיר.
-`src/systemCertificates.ts` מוסיף לאמון של Node את התעודות ש-Windows כבר סומך עליהן - בלי לבטל בדיקת תעודות.
+`src/systemCertificates.js` מוסיף לאמון של Node את התעודות ש-Windows כבר סומך עליהן - בלי לבטל בדיקת תעודות.
 
 ## ⚠️ לפני שימוש אמיתי
 
-- **המחירים ב-`prisma/data/productPrices.ts` הם ערכי דוגמה, לא מחירון אמיתי.** כולם `isVerified: false`,
+- **המחירים ב-`prisma/data/productPrices.js` הם ערכי דוגמה, לא מחירון אמיתי.** כולם `isVerified: false`,
   והתשובה של `/api/diagnose` מצרפת אזהרה בעברית. יש להחליף במחירון עדכני.
 - **החומרים הפעילים הם מידע כללי משירותי הדרכה, לא המלצת ריסוס.** יש לוודא רישום בישראל לכל גידול ומחלה.
 - **התמונות נשמרות בדיסק (`uploads/`) ואין עדיין נתיב להצגתן.** לייצור כדאי אחסון ענן ונתיב מאובטח.

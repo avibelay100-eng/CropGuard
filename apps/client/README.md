@@ -1,6 +1,6 @@
 # CropGuard Client
 
-אפליקציית הרשת של CropGuard: React 19 + TypeScript + Tailwind CSS 4 + Vite.
+אפליקציית הרשת של CropGuard: React 19 + JavaScript (JSX) + Tailwind CSS 4 + Vite.
 בעברית מלאה ומימין לשמאל, ומותאמת לטלפון בשדה.
 
 ## הרצה
@@ -54,25 +54,24 @@ npm run dev:client   # בטרמינל שלישי
 
 | תיקייה | תוכן |
 |---|---|
-| `src/api/client.ts` | כל הקריאות לשרת, עם JWT, והודעות שגיאה בעברית |
-| `src/auth/AuthContext.tsx` | מצב ההתחברות; טוקן שפג מנתק אוטומטית |
+| `src/api/client.js` | כל הקריאות לשרת, עם JWT, והודעות שגיאה בעברית |
+| `src/auth/AuthContext.jsx` | מצב ההתחברות; טוקן שפג מנתק אוטומטית |
 | `src/components/` | כרטיס התוצאה, מד הוודאות, בוחר התמונה, המסגרת והניווט, רכיבי טופס |
 | `src/pages/` | המסכים |
 | `src/lib/` | עיצוב מחירים, אחוזים ותאריכים בעברית, ושמות גידולים |
 | `src/test/` | הגדרות הבדיקות וכלי עזר (fetch מדומה, נתוני דוגמה) |
 
-כל טיפוסי ה-API מגיעים מ-`@cropguard/shared-types`, כך שכל שינוי בשרת מתגלה בבדיקת הטיפוסים.
+צורות הבקשות והתשובות מתועדות ב-`@cropguard/shared-types` (JSDoc). שינוי בשרת נתפס בבדיקות של הלקוח, שבודקות את המסכים מול תשובות לדוגמה.
 
 ## בדיקות ואיכות
 
 ```powershell
-npm test            # 77 בדיקות (Vitest + Testing Library)
-npm run typecheck   # TypeScript
+npm test            # 94 בדיקות (Vitest + Testing Library)
 npm run lint        # oxlint, כולל חוקי React Hooks ונגישות
-npm run build       # בדיקת טיפוסים + בנייה לייצור
+npm run build       # בנייה לייצור
 ```
 
 הבדיקות מרנדרות את המסכים האמיתיים עם `fetch` מדומה. הן לא צריכות שרת.
 
-> **למה oxlint ולא ESLint?** הפרויקט משתמש ב-TypeScript 7, שאין לו JavaScript API,
-> ולכן typescript-eslint לא יכול לעבוד בו. oxlint עצמאי, ובודק את אותם חוקי React Hooks ונגישות.
+> **למה oxlint ולא ESLint?** oxlint מהיר מאוד, לא צריך קובץ הגדרות, ובודק את אותם חוקי React Hooks ונגישות.
+> בלי בדיקת טיפוסים, הוא גם מה שתופס משתנים וייבואים שלא בשימוש.

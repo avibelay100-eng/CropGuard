@@ -1,20 +1,20 @@
 # CropGuard AI Engine
 
 שירות REST שמקבל תמונה של עלה ומחזיר את המחלה, אחוז הוודאות והאם העלה בריא או נגוע.
-כתוב ב-**TypeScript** (Node.js + Fastify) ומריץ את המודל עם **ONNX Runtime**.
+כתוב ב-**JavaScript** (Node.js + Fastify) ומריץ את המודל עם **ONNX Runtime**.
 המודל מזהה 38 מחלקות (26 מחלות ו-12 מצבי "בריא") ב-14 סוגי צמחים.
 
 ## מבנה התיקייה
 
 | קובץ | תפקיד |
 |---|---|
-| `src/server.ts` | נקודת הכניסה: מעלה את השרת ומאזין לפורט |
-| `src/app.ts` | בניית האפליקציה: טעינה בעלייה, נקודות קצה, טיפול בשגיאות, לוגים |
-| `src/modelLoader.ts` | טעינת מודל ה-ONNX, בדיקתו והרצת תחזית |
-| `src/imageProcessing.ts` | פענוח התמונה, המרה ל-RGB ושינוי גודל ל-224x224 |
-| `src/labels.ts` | טעינת `labels-38.txt`, שמות קריאים וזיהוי "בריא" |
-| `src/schemas.ts` | סכמות ה-JSON לסריאליזציה ולתיעוד. הטיפוסים עצמם נמצאים ב-`packages/shared-types` |
-| `src/config.ts` | הגדרות ממשתני סביבה `AI_ENGINE_*` |
+| `src/server.js` | נקודת הכניסה: מעלה את השרת ומאזין לפורט |
+| `src/app.js` | בניית האפליקציה: טעינה בעלייה, נקודות קצה, טיפול בשגיאות, לוגים |
+| `src/modelLoader.js` | טעינת מודל ה-ONNX, בדיקתו והרצת תחזית |
+| `src/imageProcessing.js` | פענוח התמונה, המרה ל-RGB ושינוי גודל ל-224x224 |
+| `src/labels.js` | טעינת `labels-38.txt`, שמות קריאים וזיהוי "בריא" |
+| `src/schemas.js` | סכמות ה-JSON לסריאליזציה ולתיעוד. הטיפוסים עצמם נמצאים ב-`packages/shared-types` |
+| `src/config.js` | הגדרות ממשתני סביבה `AI_ENGINE_*` |
 | `public/index.html` | דף בדיקה בעברית שמוגש בכתובת `/` |
 | `test/` | בדיקות (Vitest) שרצות מול המודל האמיתי |
 | `model/cropora_model.onnx` | המודל שהשירות מריץ |
@@ -37,10 +37,9 @@ npm run dev
   ורואים את שם המחלה, אחוז הוודאות והאם העלה בריא או נגוע.
 - **`http://localhost:8001/docs`** - תיעוד ה-API למפתחים (Swagger).
 
-לייצור:
+לייצור (הקוד רץ ישירות, בלי שלב בנייה):
 
 ```powershell
-npm run build
 npm start
 ```
 
@@ -48,7 +47,7 @@ npm start
 
 ```powershell
 npm test
-npm run typecheck
+npm run lint
 ```
 
 הבדיקות משוות את התוצאות לערכי ייחוס שהופקו מהמודל המקורי ב-Keras על אותן תמונות.

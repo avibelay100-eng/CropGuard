@@ -1,0 +1,78 @@
+/**
+ * טיפול אחיד בשגיאות: כל שגיאה יוצאת מהשרת בפורמט {"error": "<קוד>", "detail": "<הסבר>"}.
+ */
+
+import multer from "multer";
+import { ZodError } from "zod";
+
+/** שגיאה עם סטטוס HTTP וקוד קבוע, שנזרקת מתוך ה-routes */
+export class HttpError extends Error {
+  name = "HttpError";
+  status;
+  code;
+  constructor(status, code, message) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+// קיצורים ליצירת השגיאות הנפוצות - כך כל route זורק שגיאה בשורה אחת, עם הקוד הנכון
+export const badRequest = (message) => new HttpError(400, "bad_request", message);
+export const validationError = (message) => new HttpError(422, "validation_error", message);
+export const unauthorized = (message = "Authentication required.") => new HttpError(401, "unauthorized", message);
+export const forbidden = (message = "You do not have permission to do this.") => new HttpError(403, "forbidden", message);
+export const notFound = (message) => new HttpError(404, "not_found", message);
+export const conflict = (message) => new HttpError(409, "conflict", message);
+
+/** גוף השגיאה האחיד: {error, detail}. הלקוח מתרגם את error להודעה בעברית */
+export function errorBody(code, detail) {
+  return { error: code, detail };
+}
+
+/** הופך שגיאות zod להודעה קצרה וקריאה: "latitude: Too big..." */
+function describeZodError(error) {
+  return error.issues
+    .map((issue) => (issue.path.length ? `${issue.path.join(".")}: ${issue.message}` : issue.message))
+    .join("; ");
+}
+
+/** ממפה כל שגיאה לסטטוס, קוד והודעה ללקוח */
+function classify(error) {
+  if (error instanceof HttpError) return error;
+  if (error instanceof ZodError) return validationError(describeZodError(error));
+
+  if (error instanceof multer.MulterError) {
+    if (error.code === "LIMIT_FILE_SIZE") return new HttpError(413, "payload_too_large", "Uploaded image is too large.");
+    if (error.code === "LIMIT_UNEXPECTED_FILE") {
+      return validationError('Send exactly one image, in a form field named "image".');
+    }
+    return badRequest(error.message);
+  }
+
+  // שגיאות של body-parser (JSON פגום, גוף גדול מדי)
+  const type = (error).type;
+  if (type === "entity.parse.failed") return badRequest("Request body is not valid JSON.");
+  if (type === "entity.too.large") return new HttpError(413, "payload_too_large", "Request body is too large.");
+
+  return new HttpError(500, "internal_error", "Internal server error.");
+}
+
+/**
+ * ה-handler האחרון של Express: כל שגיאה שנזרקה מגיעה לכאן.
+ * 5xx נרשמות ללוג עם כל הפרטים, אבל ללקוח יוצאת רק הודעה כללית - בלי דליפת מידע פנימי.
+ */
+export const errorHandler = (error, request, response, _next) => {
+  const httpError = classify(error);
+  if (httpError.status >= 500) {
+    request.log?.error({ err: error }, "Request failed");
+  } else {
+    request.log?.warn({ status: httpError.status, detail: httpError.message }, "Request rejected");
+  }
+  response.status(httpError.status).json(errorBody(httpError.code, httpError.message));
+};
+
+/** כתובת שלא קיימת - 404 באותו פורמט אחיד */
+export const notFoundHandler = (request, response) => {
+  response.status(404).json(errorBody("not_found", `Route ${request.method} ${request.path} not found.`));
+};

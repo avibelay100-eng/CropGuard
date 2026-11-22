@@ -55,7 +55,7 @@
 
 ## ארכיטקטורה בקצרה
 
-שלוש מערכות נפרדות, שמדברות ב-HTTP/JSON, וטיפוסים משותפים ב-TypeScript:
+שלוש מערכות נפרדות ב-JavaScript (Node.js), שמדברות ב-HTTP/JSON, וחוזה נתונים משותף (JSDoc):
 
 ```mermaid
 flowchart LR
@@ -78,9 +78,9 @@ flowchart LR
     C -- "REST /api (JWT)" --> S
     S -- "POST /predict (image)" --> A
 
-    T["packages/shared-types"] -. "TypeScript types" .- C
-    T -. "TypeScript types" .- S
-    T -. "TypeScript types" .- A
+    T["packages/shared-types"] -. "JSDoc typedefs" .- C
+    T -. "JSDoc typedefs" .- S
+    T -. "JSDoc typedefs" .- A
 ```
 
 | מערכת | אחריות | יודעת על |
@@ -128,9 +128,8 @@ npm run e2e
 |---|---|
 | `npm run dev:ai` / `dev:server` / `dev:client` | הרצת כל מערכת במצב פיתוח |
 | `npm test` | כל הבדיקות בכל החבילות |
-| `npm run typecheck` | בדיקת טיפוסים בכל החבילות |
-| `npm run lint` | בדיקת קוד (oxlint) |
-| `npm run build` | בנייה לייצור |
+| `npm run lint` | בדיקת קוד (oxlint) בכל החבילות |
+| `npm run build` | בניית הלקוח לייצור (השרת ושירות ה-AI רצים ישירות מהקוד) |
 | `npm run e2e` | מסע חקלאי מלא מול המערכות הרצות (אפשר גם עם צילום: `npm run e2e -- leaf.jpg`) |
 
 ---
@@ -167,7 +166,7 @@ CropGuard/                     monorepo (npm workspaces)
 
 | שכבה | טכנולוגיה | למה |
 |---|---|---|
-| שפה | **TypeScript** בכל המערכות | טיפוסים משותפים מקצה לקצה |
+| שפה | **JavaScript** (Node.js, ES Modules) בכל המערכות | שפה אחת מקצה לקצה; חוזי הנתונים מתועדים ב-JSDoc |
 | AI | **ONNX Runtime** (onnxruntime-node), **sharp** | הרצת המודל ב-Node בלי Python בזמן ריצה |
 | AI API | **Fastify 5** + Swagger | מהיר, סכמות JSON מובנות, תיעוד אוטומטי |
 | שרת | **Express 5**, **zod 4** | Express 5 מטפל בשגיאות async; zod מאמת כל קלט |
@@ -175,19 +174,19 @@ CropGuard/                     monorepo (npm workspaces)
 | אבטחה | **JWT** (HS256), **bcrypt**, rate limit | אימות stateless, גיבוב סיסמאות, הגנה מניחוש |
 | לקוח | **React 19**, **Vite 8**, **Tailwind 4**, React Router | פיתוח מהיר, RTL עם מאפיינים לוגיים |
 | בדיקות | **Vitest**, Supertest, Testing Library | אותו כלי בכל החבילות |
-| איכות | `tsc` strict, **oxlint** | בדיקת טיפוסים ובדיקת קוד, כולל React Hooks ונגישות |
+| איכות | **oxlint** בכל החבילות | בדיקת קוד: משתנים לא בשימוש, React Hooks ונגישות |
 
 ---
 
 ## בדיקות
 
-**241 בדיקות אוטומטיות**, ועוד בדיקת מקצה לקצה חיה:
+**304 בדיקות אוטומטיות**, ועוד בדיקת מקצה לקצה חיה:
 
 | חבילה | בדיקות | מה נבדק |
 |---|---|---|
 | `services/ai_engine` | 31 | המודל האמיתי מול ערכי ייחוס מ-Keras, התפלגות מלאה (`top_k`), קודי שגיאה, עיבוד תמונה |
-| `apps/server` | 133 | כל ה-routes מול PostgreSQL אמיתי, RBAC, בדיקת התאמה לגידול, שחזור סיסמה, ספרייה, חדשות, AI מדומה (כולל תקלות) |
-| `apps/client` | 77 | המסכים האמיתיים עם fetch מדומה: התחברות ושחזור סיסמה, סריקה, חלקות, היסטוריה ומחיקה, ספרייה, חדשות |
+| `apps/server` | 179 | כל ה-routes מול PostgreSQL אמיתי, RBAC, בדיקת התאמה לגידול, יומן שדה ו-PHI, שחזור סיסמה, ספרייה, חדשות, AI מדומה (כולל תקלות) |
+| `apps/client` | 94 | המסכים האמיתיים עם fetch מדומה: התחברות ושחזור סיסמה, סריקה, חלקות ויומן שדה, היסטוריה ומחיקה, ספרייה, חדשות |
 | `npm run e2e` | 21 בדיקות | מסע חקלאי מלא מול שלוש המערכות הרצות, כולל בדיקת אבטחה |
 
 בדיקות השרת צריכות מסד בדיקות נפרד (`TEST_DATABASE_URL`), כי הן מוחקות בו נתונים.
