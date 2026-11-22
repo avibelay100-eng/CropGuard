@@ -19,6 +19,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "e2e": "node scripts/e2e-journey.mjs"
   }
 }
